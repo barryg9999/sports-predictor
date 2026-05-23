@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MLB Winner Scorecard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="mlb-page">
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Baseball model</p>
+        <h1>MLB Winner Scorecard</h1>
+      </div>
+      <form class="mlb-date-form" id="scoreForm">
+        <div class="selector-grid">
+          <div>
+            <label for="sportSelect">Sport</label>
+            <select id="sportSelect">
+              <option value="mlb">MLB</option>
+            </select>
+          </div>
+          <div>
+            <label for="modelSelect">Model</label>
+            <select id="modelSelect">
+              <option value="core5">MLB Core 5</option>
+              <option value="expanded10">MLB Expanded 10</option>
+            </select>
+          </div>
+        </div>
+        <label for="gameDate">Game date</label>
+        <div class="date-actions">
+          <input id="gameDate" type="date" />
+          <button type="submit">Analyze Games</button>
+        </div>
+      </form>
+    </header>
+
+    <main class="mlb-shell">
+      <section class="model-bar" id="modelBar" aria-label="Model weights">
+        <div><strong>30%</strong><span>Starter FIP</span></div>
+        <div><strong>25%</strong><span>Pythagorean W%</span></div>
+        <div><strong>20%</strong><span>Bullpen 15-day ERA</span></div>
+        <div><strong>18%</strong><span>Lineup wRC+ proxy</span></div>
+        <div><strong>7%</strong><span>Home field</span></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2 id="resultTitle">Choose a date</h2>
+          <span class="pill" id="runStatus">Ready</span>
+        </div>
+        <div class="score-note" id="scoreNote">
+          Scores are normalized to 0-100 before weighting. Games will be ordered by strongest composite-score edge.
+        </div>
+        <div class="score-table-wrap">
+          <table class="score-table">
+            <thead>
+              <tr>
+                <th>Edge</th>
+                <th>Game</th>
+                <th>Predicted winner</th>
+                <th>Actual result</th>
+                <th>Winner score</th>
+                <th>Opponent score</th>
+                <th>Margin</th>
+              </tr>
+            </thead>
+            <tbody id="scoreRows">
+              <tr>
+                <td colspan="7" class="empty-row">Load the current schedule to score every game.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel odds-panel">
+        <div class="panel-heading">
+          <div>
+            <h2>Odds Comparison</h2>
+            <p class="panel-subtitle">Compare FanDuel and DraftKings moneyline, run line, totals, tie markets, and model edge.</p>
+          </div>
+          <span class="pill" id="oddsStatus">Ready</span>
+        </div>
+        <form class="odds-form" id="oddsForm">
+          <div>
+            <strong id="oddsContext">Uses the selected date and model.</strong>
+            <span>Moneyline edge compares the model's score-implied probability to no-vig book probability.</span>
+          </div>
+          <button type="submit">Load Odds</button>
+        </form>
+        <div class="score-note" id="oddsNote">
+          Add an odds API key on the server to load FanDuel and DraftKings markets.
+        </div>
+        <div class="score-table-wrap">
+          <table class="score-table odds-table">
+            <thead>
+              <tr>
+                <th>Game</th>
+                <th>Model vs Market</th>
+                <th>FanDuel</th>
+                <th>DraftKings</th>
+                <th>Tie / Push</th>
+              </tr>
+            </thead>
+            <tbody id="oddsRows">
+              <tr>
+                <td colspan="5" class="empty-row">Load odds to compare moneyline, run line, totals, and possible tie/push outcomes.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="game-detail-grid" id="gameDetails"></section>
+
+      <section class="panel snapshot-panel">
+        <div class="panel-heading">
+          <div>
+            <h2>Prediction Snapshots</h2>
+            <p class="panel-subtitle">Freeze picks before first pitch so future backtests use the original trade-day view.</p>
+          </div>
+          <span class="pill" id="snapshotStatus">Ready</span>
+        </div>
+        <form class="snapshot-form" id="snapshotForm">
+          <div>
+            <label for="snapshotDate">Snapshot date</label>
+            <input id="snapshotDate" type="date" />
+          </div>
+          <div>
+            <label for="snapshotModel">Model</label>
+            <select id="snapshotModel">
+              <option value="all">Both models</option>
+              <option value="core5">MLB Core 5</option>
+              <option value="expanded10">MLB Expanded 10</option>
+            </select>
+          </div>
+          <button type="submit">Save Snapshot</button>
+        </form>
+        <div class="score-note" id="snapshotNote">
+          Saved snapshots keep the model, pick, margin, confidence bucket, component scores, and game status at capture time.
+        </div>
+        <div id="snapshotResults" class="snapshot-results">
+          <div class="empty-row">No snapshot loaded yet.</div>
+        </div>
+      </section>
+
+      <section class="panel backtest-panel">
+        <div class="panel-heading">
+          <div>
+            <h2>Backtest & Calibration</h2>
+            <p class="panel-subtitle">Run completed MLB slates through the models and see which confidence buckets are actually working.</p>
+          </div>
+          <span class="pill" id="backtestStatus">Ready</span>
+        </div>
+        <form class="backtest-form" id="backtestForm">
+          <div>
+            <label for="backtestStart">Start date</label>
+            <input id="backtestStart" type="date" />
+          </div>
+          <div>
+            <label for="backtestEnd">End date</label>
+            <input id="backtestEnd" type="date" />
+          </div>
+          <div>
+            <label for="backtestModel">Model</label>
+            <select id="backtestModel">
+              <option value="all">Both models</option>
+              <option value="core5">MLB Core 5</option>
+              <option value="expanded10">MLB Expanded 10</option>
+            </select>
+          </div>
+          <div>
+            <label for="backtestSource">Source</label>
+            <select id="backtestSource">
+              <option value="snapshots">Saved snapshots</option>
+              <option value="estimated">Historical estimate</option>
+            </select>
+          </div>
+          <button type="submit">Run Backtest</button>
+        </form>
+        <div class="score-note" id="backtestNote">
+          Snapshot backtests are limited to 10 days at a time and count only predictions saved before scheduled first pitch.
+        </div>
+        <div id="backtestResults" class="backtest-results">
+          <div class="empty-row">Run a backtest to see model accuracy, confidence-bucket calibration, and suggested no-pick thresholds.</div>
+        </div>
+      </section>
+    </main>
+
+    <script src="mlb.js"></script>
+  </body>
+</html>

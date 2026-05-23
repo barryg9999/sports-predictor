@@ -1,0 +1,20 @@
+# Sports Scorecard
+
+
+--To edit, enter into Codex--
+
+Open the sports-scorecard project on my Desktop.
+-- OR --
+Open /Users/barry/Desktop/sports-scorecard
+
+-----------------------------------------
+
+--To run--
+
+In Terminal, enter the following:
+cd ~/Desktop/sports-scorecard
+npm start
+
+--Then open the web page---
+http://127.0.0.1:4173/mlb.html
+

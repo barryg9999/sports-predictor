@@ -1,0 +1,2090 @@
+{
+  "version": 1,
+  "sport": "mlb",
+  "date": "2026-05-23",
+  "modelId": "core5",
+  "captures": [
+    {
+      "id": "2026-05-23T14-28-50-625Z",
+      "capturedAt": "2026-05-23T14:28:50.625Z",
+      "scorecardGeneratedAt": "2026-05-23T14:28:50.625Z",
+      "date": "2026-05-23",
+      "model": {
+        "id": "core5",
+        "name": "MLB Core 5",
+        "description": "Original five-factor MLB model.",
+        "components": [
+          {
+            "id": "spFip",
+            "label": "Starter FIP",
+            "weight": 0.3
+          },
+          {
+            "id": "pyth",
+            "label": "Pythagorean W%",
+            "weight": 0.25
+          },
+          {
+            "id": "bullpenEra",
+            "label": "Bullpen 15-day ERA",
+            "weight": 0.2
+          },
+          {
+            "id": "lineupWrc",
+            "label": "Lineup wRC+",
+            "weight": 0.18
+          },
+          {
+            "id": "homeField",
+            "label": "Home field",
+            "weight": 0.07
+          }
+        ]
+      },
+      "totalGames": 16,
+      "games": [
+        {
+          "gamePk": 824920,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T20:10:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Truist Park",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 120,
+            "teamName": "Washington Nationals",
+            "abbreviation": "WSH",
+            "probablePitcher": "Jake Irvin",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 40.8247,
+            "spFip": 4.5884,
+            "pyth": 0.4734,
+            "bullpenEra": 5.5049,
+            "lineupWrcPlus": 102.5459,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 47.7896,
+                "detail": "FIP 4.59",
+                "value": 4.588415158287693
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 44.6856,
+                "detail": "Pyth W% 47.3%",
+                "value": 0.4734278264355277
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 36.2754,
+                "detail": "15-day ERA 5.50",
+                "value": 5.504854368932039
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 44.7852,
+                "detail": "102.5 vs RHP",
+                "value": 102.54593966592107
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 0,
+                "detail": "Away",
+                "value": 0
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 144,
+            "teamName": "Atlanta Braves",
+            "abbreviation": "ATL",
+            "probablePitcher": "Grant Holmes",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 68.8624,
+            "spFip": 4.7997,
+            "pyth": 0.7019,
+            "bullpenEra": 2.9137,
+            "lineupWrcPlus": 111.9287,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 42.5079,
+                "detail": "FIP 4.80",
+                "value": 4.799682763921496
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 90.3734,
+                "detail": "Pyth W% 70.2%",
+                "value": 0.7018668121435806
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 83.3878,
+                "detail": "15-day ERA 2.91",
+                "value": 2.9136690647482015
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 54.6618,
+                "detail": "111.9 vs RHP",
+                "value": 111.92867883742407
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 100,
+                "detail": "Home",
+                "value": 100
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "home",
+            "teamName": "Atlanta Braves",
+            "abbreviation": "ATL",
+            "composite": 68.8624
+          },
+          "margin": 28.0377,
+          "bucket": "strong"
+        },
+        {
+          "gamePk": 825080,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-24T02:10:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Chase Field",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 115,
+            "teamName": "Colorado Rockies",
+            "abbreviation": "COL",
+            "probablePitcher": "Michael Lorenzen",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 38.7316,
+            "spFip": 5.2459,
+            "pyth": 0.3985,
+            "bullpenEra": 3.9194,
+            "lineupWrcPlus": 106.8734,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 31.3513,
+                "detail": "FIP 5.25",
+                "value": 5.245949404863035
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 29.6976,
+                "detail": "Pyth W% 39.8%",
+                "value": 0.39848776836857164
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 65.1026,
+                "detail": "15-day ERA 3.92",
+                "value": 3.9193548387096775
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 49.3405,
+                "detail": "106.9 vs RHP",
+                "value": 106.87344318046014
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 0,
+                "detail": "Away",
+                "value": 0
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 109,
+            "teamName": "Arizona Diamondbacks",
+            "abbreviation": "AZ",
+            "probablePitcher": "Zac Gallen",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 59.6295,
+            "spFip": 4.5986,
+            "pyth": 0.496,
+            "bullpenEra": 2.4796,
+            "lineupWrcPlus": 101.2485,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 47.5345,
+                "detail": "FIP 4.60",
+                "value": 4.598619239920346
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 49.1903,
+                "detail": "Pyth W% 49.6%",
+                "value": 0.49595138949662787
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 91.2801,
+                "detail": "15-day ERA 2.48",
+                "value": 2.479591836734694
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 43.4195,
+                "detail": "101.2 vs RHP",
+                "value": 101.24853258353579
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 100,
+                "detail": "Home",
+                "value": 100
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "home",
+            "teamName": "Arizona Diamondbacks",
+            "abbreviation": "AZ",
+            "composite": 59.6295
+          },
+          "margin": 20.8979,
+          "bucket": "strong"
+        },
+        {
+          "gamePk": 823458,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T20:05:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Citizens Bank Park",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 114,
+            "teamName": "Cleveland Guardians",
+            "abbreviation": "CLE",
+            "probablePitcher": "Slade Cecconi",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 51.3197,
+            "spFip": 4.9801,
+            "pyth": 0.5505,
+            "bullpenEra": 2.7209,
+            "lineupWrcPlus": 99.6805,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 37.9966,
+                "detail": "FIP 4.98",
+                "value": 4.980134903510622
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 60.0956,
+                "detail": "Pyth W% 55.0%",
+                "value": 0.5504782001813344
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 86.8922,
+                "detail": "15-day ERA 2.72",
+                "value": 2.7209302325581395
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 41.7689,
+                "detail": "99.7 vs RHP",
+                "value": 99.68047283524155
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 0,
+                "detail": "Away",
+                "value": 0
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 143,
+            "teamName": "Philadelphia Phillies",
+            "abbreviation": "PHI",
+            "probablePitcher": "Zack Wheeler",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 69.4283,
+            "spFip": 2.3621,
+            "pyth": 0.4485,
+            "bullpenEra": 3.4839,
+            "lineupWrcPlus": 101.6923,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 100,
+                "detail": "FIP 2.36",
+                "value": 2.3620993688140084
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 39.6984,
+                "detail": "Pyth W% 44.8%",
+                "value": 0.44849188631140097
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 73.0205,
+                "detail": "15-day ERA 3.48",
+                "value": 3.4838709677419355
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 43.8867,
+                "detail": "101.7 vs RHP",
+                "value": 101.69234345062851
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 100,
+                "detail": "Home",
+                "value": 100
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "home",
+            "teamName": "Philadelphia Phillies",
+            "abbreviation": "PHI",
+            "composite": 69.4283
+          },
+          "margin": 18.1086,
+          "bucket": "strong"
+        },
+        {
+          "gamePk": 823222,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T20:05:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Oracle Park",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 145,
+            "teamName": "Chicago White Sox",
+            "abbreviation": "CWS",
+            "probablePitcher": "Bryan Hudson",
+            "starterKnown": true,
+            "pitcherHand": "L",
+            "composite": 57.9034,
+            "spFip": 2.7841,
+            "pyth": 0.4861,
+            "bullpenEra": 4.7647,
+            "lineupWrcPlus": 103.7103,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 92.8983,
+                "detail": "FIP 2.78",
+                "value": 2.784067332200736
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 47.2218,
+                "detail": "Pyth W% 48.6%",
+                "value": 0.48610879840757626
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 49.7326,
+                "detail": "15-day ERA 4.76",
+                "value": 4.764705882352941
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 46.0108,
+                "detail": "103.7 vs RHP",
+                "value": 103.7102658855521
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 0,
+                "detail": "Away",
+                "value": 0
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 137,
+            "teamName": "San Francisco Giants",
+            "abbreviation": "SF",
+            "probablePitcher": "Adrian Houser",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 41.8027,
+            "spFip": 5.4842,
+            "pyth": 0.375,
+            "bullpenEra": 3.3974,
+            "lineupWrcPlus": 91.7539,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 25.3938,
+                "detail": "FIP 5.48",
+                "value": 5.484248491621026
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 24.9973,
+                "detail": "Pyth W% 37.5%",
+                "value": 0.3749864047715895
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 74.5936,
+                "detail": "15-day ERA 3.40",
+                "value": 3.3973509933774833
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 33.4251,
+                "detail": "91.8 vs LHP",
+                "value": 91.75385878899476
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 100,
+                "detail": "Home",
+                "value": 100
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "Chicago White Sox",
+            "abbreviation": "CWS",
+            "composite": 57.9034
+          },
+          "margin": 16.1007,
+          "bucket": "strong"
+        },
+        {
+          "gamePk": 824674,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T18:20:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Wrigley Field",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 117,
+            "teamName": "Houston Astros",
+            "abbreviation": "HOU",
+            "probablePitcher": "Kai-Wei Teng",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 50.6399,
+            "spFip": 3.7658,
+            "pyth": 0.4017,
+            "bullpenEra": 3.5735,
+            "lineupWrcPlus": 103.6535,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 68.3541,
+                "detail": "FIP 3.77",
+                "value": 3.765834513126402
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 30.3377,
+                "detail": "Pyth W% 40.2%",
+                "value": 0.40168865219826183
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 71.3904,
+                "detail": "15-day ERA 3.57",
+                "value": 3.573529411764706
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 45.951,
+                "detail": "103.7 vs RHP",
+                "value": 103.65347088723776
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 0,
+                "detail": "Away",
+                "value": 0
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 112,
+            "teamName": "Chicago Cubs",
+            "abbreviation": "CHC",
+            "probablePitcher": "Colin Rea",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 65.2746,
+            "spFip": 4.0671,
+            "pyth": 0.5505,
+            "bullpenEra": 2.8052,
+            "lineupWrcPlus": 101.8597,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 60.8215,
+                "detail": "FIP 4.07",
+                "value": 4.067138562543012
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 60.0992,
+                "detail": "Pyth W% 55.0%",
+                "value": 0.5504960146711999
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 85.3601,
+                "detail": "15-day ERA 2.81",
+                "value": 2.8051948051948052
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 44.0629,
+                "detail": "101.9 vs RHP",
+                "value": 101.85972839646415
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 100,
+                "detail": "Home",
+                "value": 100
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "home",
+            "teamName": "Chicago Cubs",
+            "abbreviation": "CHC",
+            "composite": 65.2746
+          },
+          "margin": 14.6347,
+          "bucket": "strong"
+        },
+        {
+          "gamePk": 824030,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-24T02:05:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Angel Stadium",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 140,
+            "teamName": "Texas Rangers",
+            "abbreviation": "TEX",
+            "probablePitcher": "Nathan Eovaldi",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 58.31,
+            "spFip": 4.3323,
+            "pyth": 0.5237,
+            "bullpenEra": 1.7308,
+            "lineupWrcPlus": 104.1632,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 54.1921,
+                "detail": "FIP 4.33",
+                "value": 4.332317597312083
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 54.7384,
+                "detail": "Pyth W% 52.4%",
+                "value": 0.5236922127081912
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 100,
+                "detail": "15-day ERA 1.73",
+                "value": 1.7307692307692308
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 46.4876,
+                "detail": "104.2 vs RHP",
+                "value": 104.16319410769728
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 0,
+                "detail": "Away",
+                "value": 0
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 108,
+            "teamName": "Los Angeles Angels",
+            "abbreviation": "LAA",
+            "probablePitcher": "Walbert Ureña",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 45.407,
+            "spFip": 3.8684,
+            "pyth": 0.3775,
+            "bullpenEra": 6.0795,
+            "lineupWrcPlus": 97.6254,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 65.7896,
+                "detail": "FIP 3.87",
+                "value": 3.8684151582876924
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 25.5022,
+                "detail": "Pyth W% 37.8%",
+                "value": 0.377510870073575
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 25.8278,
+                "detail": "15-day ERA 6.08",
+                "value": 6.079470198675497
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 39.6057,
+                "detail": "97.6 vs RHP",
+                "value": 97.62543556552016
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 100,
+                "detail": "Home",
+                "value": 100
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "Texas Rangers",
+            "abbreviation": "TEX",
+            "composite": 58.31
+          },
+          "margin": 12.903,
+          "bucket": "strong"
+        },
+        {
+          "gamePk": 824516,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T23:15:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Great American Ball Park",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 138,
+            "teamName": "St. Louis Cardinals",
+            "abbreviation": "STL",
+            "probablePitcher": "Kyle Leahy",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 46.6027,
+            "spFip": 4.8183,
+            "pyth": 0.4897,
+            "bullpenEra": 3.7969,
+            "lineupWrcPlus": 105.0756,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 42.0414,
+                "detail": "FIP 4.82",
+                "value": 4.818342165586962
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 47.9347,
+                "detail": "Pyth W% 49.0%",
+                "value": 0.4896737161948237
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 67.3295,
+                "detail": "15-day ERA 3.80",
+                "value": 3.796875
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 47.448,
+                "detail": "105.1 vs RHP",
+                "value": 105.07559077703577
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 0,
+                "detail": "Away",
+                "value": 0
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 113,
+            "teamName": "Cincinnati Reds",
+            "abbreviation": "CIN",
+            "probablePitcher": "Chase Petty",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 34.8056,
+            "spFip": 6.0884,
+            "pyth": 0.4456,
+            "bullpenEra": 5.3182,
+            "lineupWrcPlus": 96.9594,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 10.2896,
+                "detail": "FIP 6.09",
+                "value": 6.088415158287693
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 39.1281,
+                "detail": "Pyth W% 44.6%",
+                "value": 0.44564044153282223
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 39.6694,
+                "detail": "15-day ERA 5.32",
+                "value": 5.318181818181818
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 38.9046,
+                "detail": "97.0 vs RHP",
+                "value": 96.95937421318948
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 100,
+                "detail": "Home",
+                "value": 100
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "St. Louis Cardinals",
+            "abbreviation": "STL",
+            "composite": 46.6027
+          },
+          "margin": 11.797,
+          "bucket": "solid"
+        },
+        {
+          "gamePk": 824109,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T20:10:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Kauffman Stadium",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 136,
+            "teamName": "Seattle Mariners",
+            "abbreviation": "SEA",
+            "probablePitcher": "George Kirby",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 61.8019,
+            "spFip": 3.5352,
+            "pyth": 0.5289,
+            "bullpenEra": 2.7794,
+            "lineupWrcPlus": 104.6201,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 74.1194,
+                "detail": "FIP 3.54",
+                "value": 3.5352236689259904
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 55.7838,
+                "detail": "Pyth W% 52.9%",
+                "value": 0.5289189516908981
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 85.8289,
+                "detail": "15-day ERA 2.78",
+                "value": 2.7794117647058822
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 46.9685,
+                "detail": "104.6 vs RHP",
+                "value": 104.62010466376046
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 0,
+                "detail": "Away",
+                "value": 0
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 118,
+            "teamName": "Kansas City Royals",
+            "abbreviation": "KC",
+            "probablePitcher": "Stephen Kolek",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 50.4213,
+            "spFip": 4.8531,
+            "pyth": 0.4306,
+            "bullpenEra": 3.5217,
+            "lineupWrcPlus": 99.9698,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 41.172,
+                "detail": "FIP 4.85",
+                "value": 4.853121040640634
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 36.1202,
+                "detail": "Pyth W% 43.1%",
+                "value": 0.4306012191347036
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 72.332,
+                "detail": "15-day ERA 3.52",
+                "value": 3.5217391304347827
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 42.0735,
+                "detail": "100.0 vs RHP",
+                "value": 99.96982737956385
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 100,
+                "detail": "Home",
+                "value": 100
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "Seattle Mariners",
+            "abbreviation": "SEA",
+            "composite": 61.8019
+          },
+          "margin": 11.3806,
+          "bucket": "solid"
+        },
+        {
+          "gamePk": 824840,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T20:05:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Oriole Park at Camden Yards",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 116,
+            "teamName": "Detroit Tigers",
+            "abbreviation": "DET",
+            "probablePitcher": "Framber Valdez",
+            "starterKnown": true,
+            "pitcherHand": "L",
+            "composite": 50.0104,
+            "spFip": 4.0521,
+            "pyth": 0.4443,
+            "bullpenEra": 3.7772,
+            "lineupWrcPlus": 104.3197,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 61.1987,
+                "detail": "FIP 4.05",
+                "value": 4.0520515219240565
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 38.8635,
+                "detail": "Pyth W% 44.4%",
+                "value": 0.4443173575699467
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 67.6872,
+                "detail": "15-day ERA 3.78",
+                "value": 3.77720207253886
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 46.6524,
+                "detail": "104.3 vs RHP",
+                "value": 104.31973643223157
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 0,
+                "detail": "Away",
+                "value": 0
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 110,
+            "teamName": "Baltimore Orioles",
+            "abbreviation": "BAL",
+            "probablePitcher": "Brandon Young",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 39.5079,
+            "spFip": 5.212,
+            "pyth": 0.3985,
+            "bullpenEra": 5.1592,
+            "lineupWrcPlus": 96.4709,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 32.1997,
+                "detail": "FIP 5.21",
+                "value": 5.21201066390567
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 29.7035,
+                "detail": "Pyth W% 39.9%",
+                "value": 0.3985172602713883
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 42.5594,
+                "detail": "15-day ERA 5.16",
+                "value": 5.159235668789809
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 38.3904,
+                "detail": "96.5 vs LHP",
+                "value": 96.47090984990797
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 100,
+                "detail": "Home",
+                "value": 100
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "Detroit Tigers",
+            "abbreviation": "DET",
+            "composite": 50.0104
+          },
+          "margin": 10.5024,
+          "bucket": "solid"
+        },
+        {
+          "gamePk": 823862,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T20:10:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "loanDepot park",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 121,
+            "teamName": "New York Mets",
+            "abbreviation": "NYM",
+            "probablePitcher": "Freddy Peralta",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 55.9387,
+            "spFip": 4.0271,
+            "pyth": 0.4698,
+            "bullpenEra": 1.7817,
+            "lineupWrcPlus": 93.7831,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 61.8234,
+                "detail": "FIP 4.03",
+                "value": 4.027065465036159
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 43.9627,
+                "detail": "Pyth W% 47.0%",
+                "value": 0.4698135050455267
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 100,
+                "detail": "15-day ERA 1.78",
+                "value": 1.781725888324873
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 35.5612,
+                "detail": "93.8 vs RHP",
+                "value": 93.78311448069044
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 0,
+                "detail": "Away",
+                "value": 0
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 146,
+            "teamName": "Miami Marlins",
+            "abbreviation": "MIA",
+            "probablePitcher": "Max Meyer",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 65.9606,
+            "spFip": 3.0511,
+            "pyth": 0.4645,
+            "bullpenEra": 3.42,
+            "lineupWrcPlus": 99.7448,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 86.2213,
+                "detail": "FIP 3.05",
+                "value": 3.051148077542351
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 42.9092,
+                "detail": "Pyth W% 46.5%",
+                "value": 0.46454608807695535
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 74.1818,
+                "detail": "15-day ERA 3.42",
+                "value": 3.42
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 41.8366,
+                "detail": "99.7 vs RHP",
+                "value": 99.74476122782589
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 100,
+                "detail": "Home",
+                "value": 100
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "home",
+            "teamName": "Miami Marlins",
+            "abbreviation": "MIA",
+            "composite": 65.9606
+          },
+          "margin": 10.0219,
+          "bucket": "solid"
+        },
+        {
+          "gamePk": 822814,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T19:07:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Rogers Centre",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 134,
+            "teamName": "Pittsburgh Pirates",
+            "abbreviation": "PIT",
+            "probablePitcher": "Paul Skenes",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 65.2053,
+            "spFip": 2.6339,
+            "pyth": 0.542,
+            "bullpenEra": 3.7241,
+            "lineupWrcPlus": 101.5717,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 96.6533,
+                "detail": "FIP 2.63",
+                "value": 2.633869703742238
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 58.4086,
+                "detail": "Pyth W% 54.2%",
+                "value": 0.5420432328069411
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 68.652,
+                "detail": "15-day ERA 3.72",
+                "value": 3.7241379310344827
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 43.7596,
+                "detail": "101.6 vs LHP",
+                "value": 101.57165811095352
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 0,
+                "detail": "Away",
+                "value": 0
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 141,
+            "teamName": "Toronto Blue Jays",
+            "abbreviation": "TOR",
+            "probablePitcher": "Patrick Corbin",
+            "starterKnown": true,
+            "pitcherHand": "L",
+            "composite": 57.5682,
+            "spFip": 4.471,
+            "pyth": 0.487,
+            "bullpenEra": 3.1326,
+            "lineupWrcPlus": 100.2158,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 50.7244,
+                "detail": "FIP 4.47",
+                "value": 4.471023853939867
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 47.3985,
+                "detail": "Pyth W% 48.7%",
+                "value": 0.48699258013498986
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 79.4073,
+                "detail": "15-day ERA 3.13",
+                "value": 3.132596685082873
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 42.3324,
+                "detail": "100.2 vs RHP",
+                "value": 100.215782011816
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 100,
+                "detail": "Home",
+                "value": 100
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "Pittsburgh Pirates",
+            "abbreviation": "PIT",
+            "composite": 65.2053
+          },
+          "margin": 7.637,
+          "bucket": "solid"
+        },
+        {
+          "gamePk": 823300,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-24T01:40:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Petco Park",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 133,
+            "teamName": "Athletics",
+            "abbreviation": "ATH",
+            "probablePitcher": "J.T. Ginn",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 55.4752,
+            "spFip": 4.004,
+            "pyth": 0.4842,
+            "bullpenEra": 3.3022,
+            "lineupWrcPlus": 111.629,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 62.4,
+                "detail": "FIP 4.00",
+                "value": 4.003999573872108
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 46.8319,
+                "detail": "Pyth W% 48.4%",
+                "value": 0.4841595630353437
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 76.3244,
+                "detail": "15-day ERA 3.30",
+                "value": 3.302158273381295
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 54.3463,
+                "detail": "111.6 vs RHP",
+                "value": 111.62899653153848
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 0,
+                "detail": "Away",
+                "value": 0
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 135,
+            "teamName": "San Diego Padres",
+            "abbreviation": "SD",
+            "probablePitcher": "Lucas Giolito",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 63.0514,
+            "spFip": 4.2884,
+            "pyth": 0.5157,
+            "bullpenEra": 1.6364,
+            "lineupWrcPlus": 92.6054,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 55.2896,
+                "detail": "FIP 4.29",
+                "value": 4.288415158287693
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 53.1467,
+                "detail": "Pyth W% 51.6%",
+                "value": 0.515733456721218
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 100,
+                "detail": "15-day ERA 1.64",
+                "value": 1.6363636363636365
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 34.3215,
+                "detail": "92.6 vs RHP",
+                "value": 92.60543171750982
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 100,
+                "detail": "Home",
+                "value": 100
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "home",
+            "teamName": "San Diego Padres",
+            "abbreviation": "SD",
+            "composite": 63.0514
+          },
+          "margin": 7.5762,
+          "bucket": "solid"
+        },
+        {
+          "gamePk": 823787,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T23:15:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "American Family Field",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 119,
+            "teamName": "Los Angeles Dodgers",
+            "abbreviation": "LAD",
+            "probablePitcher": "Roki Sasaki",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 58.4435,
+            "spFip": 5.5228,
+            "pyth": 0.6962,
+            "bullpenEra": 1.7113,
+            "lineupWrcPlus": 106.4757,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 24.429,
+                "detail": "FIP 5.52",
+                "value": 5.522841387795889
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 89.2355,
+                "detail": "Pyth W% 69.6%",
+                "value": 0.6961773879469771
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 100,
+                "detail": "15-day ERA 1.71",
+                "value": 1.7112676056338028
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 48.9218,
+                "detail": "106.5 vs LHP",
+                "value": 106.4757132535419
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 0,
+                "detail": "Away",
+                "value": 0
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 158,
+            "teamName": "Milwaukee Brewers",
+            "abbreviation": "MIL",
+            "probablePitcher": "Robert Gasser",
+            "starterKnown": true,
+            "pitcherHand": "L",
+            "composite": 65.8121,
+            "spFip": 5.3384,
+            "pyth": 0.6733,
+            "bullpenEra": 1.875,
+            "lineupWrcPlus": 107.1554,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 29.0396,
+                "detail": "FIP 5.34",
+                "value": 5.338415158287693
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 84.662,
+                "detail": "Pyth W% 67.3%",
+                "value": 0.6733097872392608
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 100,
+                "detail": "15-day ERA 1.88",
+                "value": 1.875
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 49.6372,
+                "detail": "107.2 vs RHP",
+                "value": 107.1553516327353
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 100,
+                "detail": "Home",
+                "value": 100
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "home",
+            "teamName": "Milwaukee Brewers",
+            "abbreviation": "MIL",
+            "composite": 65.8121
+          },
+          "margin": 7.3686,
+          "bucket": "solid"
+        },
+        {
+          "gamePk": 824518,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T17:10:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Great American Ball Park",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 138,
+            "teamName": "St. Louis Cardinals",
+            "abbreviation": "STL",
+            "probablePitcher": "Andre Pallante",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 49.7812,
+            "spFip": 4.3945,
+            "pyth": 0.4897,
+            "bullpenEra": 3.7969,
+            "lineupWrcPlus": 105.0756,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 52.6366,
+                "detail": "FIP 4.39",
+                "value": 4.394537607267284
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 47.9347,
+                "detail": "Pyth W% 49.0%",
+                "value": 0.4896737161948237
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 67.3295,
+                "detail": "15-day ERA 3.80",
+                "value": 3.796875
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 47.448,
+                "detail": "105.1 vs RHP",
+                "value": 105.07559077703577
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 0,
+                "detail": "Away",
+                "value": 0
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 113,
+            "teamName": "Cincinnati Reds",
+            "abbreviation": "CIN",
+            "probablePitcher": "Chris Paddack",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 45.3196,
+            "spFip": 4.6865,
+            "pyth": 0.4456,
+            "bullpenEra": 5.3182,
+            "lineupWrcPlus": 96.9594,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 45.3364,
+                "detail": "FIP 4.69",
+                "value": 4.686545999409188
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 39.1281,
+                "detail": "Pyth W% 44.6%",
+                "value": 0.44564044153282223
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 39.6694,
+                "detail": "15-day ERA 5.32",
+                "value": 5.318181818181818
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 38.9046,
+                "detail": "97.0 vs RHP",
+                "value": 96.95937421318948
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 100,
+                "detail": "Home",
+                "value": 100
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "St. Louis Cardinals",
+            "abbreviation": "STL",
+            "composite": 49.7812
+          },
+          "margin": 4.4616,
+          "bucket": "lean"
+        },
+        {
+          "gamePk": 824760,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T20:10:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Fenway Park",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 142,
+            "teamName": "Minnesota Twins",
+            "abbreviation": "MIN",
+            "probablePitcher": "Taj Bradley",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 61.7281,
+            "spFip": 3.4714,
+            "pyth": 0.5019,
+            "bullpenEra": 2.34,
+            "lineupWrcPlus": 100.3939,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 75.7152,
+                "detail": "FIP 3.47",
+                "value": 3.471393881691948
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 50.3853,
+                "detail": "Pyth W% 50.2%",
+                "value": 0.5019263091047707
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 93.8182,
+                "detail": "15-day ERA 2.34",
+                "value": 2.34
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 42.5199,
+                "detail": "100.4 vs LHP",
+                "value": 100.39394578951355
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 0,
+                "detail": "Away",
+                "value": 0
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 111,
+            "teamName": "Boston Red Sox",
+            "abbreviation": "BOS",
+            "probablePitcher": "Jovani Morán",
+            "starterKnown": true,
+            "pitcherHand": "L",
+            "composite": 58.1596,
+            "spFip": 4.6079,
+            "pyth": 0.4693,
+            "bullpenEra": 1.9286,
+            "lineupWrcPlus": 91.6893,
+            "components": [
+              {
+                "id": "spFip",
+                "label": "Starter FIP",
+                "weight": 0.3,
+                "score": 47.3026,
+                "detail": "FIP 4.61",
+                "value": 4.607895677768212
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.25,
+                "score": 43.8581,
+                "detail": "Pyth W% 46.9%",
+                "value": 0.46929069898148057
+              },
+              {
+                "id": "bullpenEra",
+                "label": "Bullpen 15-day ERA",
+                "weight": 0.2,
+                "score": 100,
+                "detail": "15-day ERA 1.93",
+                "value": 1.9285714285714286
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.18,
+                "score": 33.3571,
+                "detail": "91.7 vs RHP",
+                "value": 91.6892504356539
+              },
+              {
+                "id": "homeField",
+                "label": "Home field",
+                "weight": 0.07,
+                "score": 100,
+                "detail": "Home",
+                "value": 100
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "Minnesota Twins",
+            "abbreviation": "MIN",
+            "composite": 61.7281
+          },
+          "margin": 3.5685,
+          "bucket": "lean"
+        }
+      ]
+    }
+  ],
+  "updatedAt": "2026-05-23T14:28:50.625Z"
+}

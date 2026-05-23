@@ -1,0 +1,3315 @@
+{
+  "version": 1,
+  "sport": "mlb",
+  "date": "2026-05-23",
+  "modelId": "expanded10",
+  "captures": [
+    {
+      "id": "2026-05-23T14-28-51-436Z",
+      "capturedAt": "2026-05-23T14:28:51.436Z",
+      "scorecardGeneratedAt": "2026-05-23T14:28:51.436Z",
+      "date": "2026-05-23",
+      "model": {
+        "id": "expanded10",
+        "name": "MLB Expanded 10",
+        "description": "Ten-factor MLB model using pitching command, matchup offense, team strength, bullpen workload, bullpen skill, run environment, and defense.",
+        "components": [
+          {
+            "id": "spKbb",
+            "label": "SP K-BB%",
+            "weight": 0.17
+          },
+          {
+            "id": "spFip",
+            "label": "SP FIP",
+            "weight": 0.15
+          },
+          {
+            "id": "lineupWrc",
+            "label": "Lineup wRC+",
+            "weight": 0.14
+          },
+          {
+            "id": "pyth",
+            "label": "Pythagorean W%",
+            "weight": 0.12
+          },
+          {
+            "id": "bullpenAvailability",
+            "label": "Bullpen availability",
+            "weight": 0.1
+          },
+          {
+            "id": "bullpenSkill",
+            "label": "Bullpen skill",
+            "weight": 0.09
+          },
+          {
+            "id": "lineupQuality",
+            "label": "Lineup quality",
+            "weight": 0.08
+          },
+          {
+            "id": "spContact",
+            "label": "SP contact allowed",
+            "weight": 0.06
+          },
+          {
+            "id": "park",
+            "label": "Park fit",
+            "weight": 0.05
+          },
+          {
+            "id": "defense",
+            "label": "Defense proxy",
+            "weight": 0.04
+          }
+        ]
+      },
+      "totalGames": 16,
+      "games": [
+        {
+          "gamePk": 823222,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T20:05:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Oracle Park",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 145,
+            "teamName": "Chicago White Sox",
+            "abbreviation": "CWS",
+            "probablePitcher": "Bryan Hudson",
+            "starterKnown": true,
+            "pitcherHand": "L",
+            "composite": 56.1611,
+            "spFip": 2.7841,
+            "pyth": 0.4861,
+            "bullpenEra": 4.7647,
+            "lineupWrcPlus": 103.7103,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 39.7547,
+                "detail": "K-BB% 13.1%",
+                "value": 0.13131313131313133
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 92.8983,
+                "detail": "FIP 2.78",
+                "value": 2.784067332200736
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 46.0108,
+                "detail": "103.7 vs RHP",
+                "value": 103.7102658855521
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 47.2218,
+                "detail": "Pyth W% 48.6%",
+                "value": 0.48610879840757626
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 53.8889,
+                "detail": "3-day relief workload: 83 pitches, 6.2 IP",
+                "value": 83
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 39.1467,
+                "detail": "15-day FIP 4.91, K-BB% 12.4%",
+                "value": 4.911944570052398
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 39.1633,
+                "detail": "Proxy: wOBA 0.325, SLG 0.400",
+                "value": 0.32487716105550507
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 89.0526,
+                "detail": "Proxy: allowed wOBA 0.293, ERA 1.57",
+                "value": 0.2928421052631579
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 51.1459,
+                "detail": "Run factor 94",
+                "value": 94
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 85.3583,
+                "detail": "DER proxy 0.718",
+                "value": 0.7182866556836902
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 137,
+            "teamName": "San Francisco Giants",
+            "abbreviation": "SF",
+            "probablePitcher": "Adrian Houser",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 25.8763,
+            "spFip": 5.4842,
+            "pyth": 0.375,
+            "bullpenEra": 3.3974,
+            "lineupWrcPlus": 91.7539,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 4.5394,
+                "detail": "K-BB% 3.3%",
+                "value": 0.03271028037383177
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 25.3938,
+                "detail": "FIP 5.48",
+                "value": 5.484248491621026
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 33.4251,
+                "detail": "91.8 vs LHP",
+                "value": 91.75385878899476
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 24.9973,
+                "detail": "Pyth W% 37.5%",
+                "value": 0.3749864047715895
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 24.4444,
+                "detail": "3-day relief workload: 136 pitches, 8.1 IP",
+                "value": 136
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 35.0039,
+                "detail": "15-day FIP 3.82, K-BB% 3.7%",
+                "value": 3.823514496036037
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 8.6234,
+                "detail": "Proxy: wOBA 0.287, SLG 0.358",
+                "value": 0.2874231678486997
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 29.5807,
+                "detail": "Proxy: allowed wOBA 0.363, ERA 5.25",
+                "value": 0.36292452830188676
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 49.9369,
+                "detail": "Run factor 94",
+                "value": 94
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 76.5,
+                "detail": "DER proxy 0.711",
+                "value": 0.7112
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "Chicago White Sox",
+            "abbreviation": "CWS",
+            "composite": 56.1611
+          },
+          "margin": 30.2848,
+          "bucket": "strong"
+        },
+        {
+          "gamePk": 822814,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T19:07:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Rogers Centre",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 134,
+            "teamName": "Pittsburgh Pirates",
+            "abbreviation": "PIT",
+            "probablePitcher": "Paul Skenes",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 60.8436,
+            "spFip": 2.6339,
+            "pyth": 0.542,
+            "bullpenEra": 3.7241,
+            "lineupWrcPlus": 101.5717,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 87.294,
+                "detail": "K-BB% 26.4%",
+                "value": 0.2644230769230769
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 96.6533,
+                "detail": "FIP 2.63",
+                "value": 2.633869703742238
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 43.7596,
+                "detail": "101.6 vs LHP",
+                "value": 101.57165811095352
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 58.4086,
+                "detail": "Pyth W% 54.2%",
+                "value": 0.5420432328069411
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 2.7778,
+                "detail": "3-day relief workload: 175 pitches, 9.0 IP",
+                "value": 175
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 41.311,
+                "detail": "15-day FIP 4.43, K-BB% 10.3%",
+                "value": 4.433242744494589
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 33.6033,
+                "detail": "Proxy: wOBA 0.318, SLG 0.392",
+                "value": 0.31817787418655097
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 93.1111,
+                "detail": "Proxy: allowed wOBA 0.217, ERA 2.62",
+                "value": 0.21684466019417473
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 50.4004,
+                "detail": "Run factor 101",
+                "value": 101
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 89.4886,
+                "detail": "DER proxy 0.722",
+                "value": 0.7215909090909092
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 141,
+            "teamName": "Toronto Blue Jays",
+            "abbreviation": "TOR",
+            "probablePitcher": "Patrick Corbin",
+            "starterKnown": true,
+            "pitcherHand": "L",
+            "composite": 37.5631,
+            "spFip": 4.471,
+            "pyth": 0.487,
+            "bullpenEra": 3.1326,
+            "lineupWrcPlus": 100.2158,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 18.5201,
+                "detail": "K-BB% 7.2%",
+                "value": 0.0718562874251497
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 50.7244,
+                "detail": "FIP 4.47",
+                "value": 4.471023853939867
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 42.3324,
+                "detail": "100.2 vs RHP",
+                "value": 100.215782011816
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 47.3985,
+                "detail": "Pyth W% 48.7%",
+                "value": 0.48699258013498986
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 0,
+                "detail": "3-day relief workload: 192 pitches, 13.0 IP",
+                "value": 192
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 58.6243,
+                "detail": "15-day FIP 3.85, K-BB% 14.3%",
+                "value": 3.850846097514212
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 33.7426,
+                "detail": "Proxy: wOBA 0.314, SLG 0.400",
+                "value": 0.3139305301645338
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 42.1098,
+                "detail": "Proxy: allowed wOBA 0.359, ERA 4.23",
+                "value": 0.3593373493975904
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 49.947,
+                "detail": "Run factor 101",
+                "value": 101
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 54.8045,
+                "detail": "DER proxy 0.694",
+                "value": 0.6938435940099834
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "Pittsburgh Pirates",
+            "abbreviation": "PIT",
+            "composite": 60.8436
+          },
+          "margin": 23.2805,
+          "bucket": "strong"
+        },
+        {
+          "gamePk": 824030,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-24T02:05:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Angel Stadium",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 140,
+            "teamName": "Texas Rangers",
+            "abbreviation": "TEX",
+            "probablePitcher": "Nathan Eovaldi",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 53.9059,
+            "spFip": 4.3323,
+            "pyth": 0.5237,
+            "bullpenEra": 1.7308,
+            "lineupWrcPlus": 104.1632,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 60.5098,
+                "detail": "K-BB% 18.9%",
+                "value": 0.1894273127753304
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 54.1921,
+                "detail": "FIP 4.33",
+                "value": 4.332317597312083
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 46.4876,
+                "detail": "104.2 vs RHP",
+                "value": 104.16319410769728
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 54.7384,
+                "detail": "Pyth W% 52.4%",
+                "value": 0.5236922127081912
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 30,
+                "detail": "3-day relief workload: 126 pitches, 9.0 IP",
+                "value": 126
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 62.123,
+                "detail": "15-day FIP 3.13, K-BB% 11.3%",
+                "value": 3.126876696749231
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 42.94,
+                "detail": "Proxy: wOBA 0.326, SLG 0.411",
+                "value": 0.3262959794696322
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 65.069,
+                "detail": "Proxy: allowed wOBA 0.311, ERA 3.62",
+                "value": 0.31079295154185027
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 49.6636,
+                "detail": "Run factor 98",
+                "value": 98
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 100,
+                "detail": "DER proxy 0.731",
+                "value": 0.731063829787234
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 108,
+            "teamName": "Los Angeles Angels",
+            "abbreviation": "LAA",
+            "probablePitcher": "Walbert Ureña",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 34.9308,
+            "spFip": 3.8684,
+            "pyth": 0.3775,
+            "bullpenEra": 6.0795,
+            "lineupWrcPlus": 97.6254,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 19.9507,
+                "detail": "K-BB% 7.6%",
+                "value": 0.07586206896551724
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 65.7896,
+                "detail": "FIP 3.87",
+                "value": 3.8684151582876924
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 39.6057,
+                "detail": "97.6 vs RHP",
+                "value": 97.62543556552016
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 25.5022,
+                "detail": "Pyth W% 37.8%",
+                "value": 0.377510870073575
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 3.3333,
+                "detail": "3-day relief workload: 174 pitches, 10.2 IP",
+                "value": 174
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 5.9019,
+                "detail": "15-day FIP 5.81, K-BB% 3.4%",
+                "value": 5.810269462923454
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 22.8995,
+                "detail": "Proxy: wOBA 0.306, SLG 0.376",
+                "value": 0.3058161512027492
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 84.9074,
+                "detail": "Proxy: allowed wOBA 0.282, ERA 2.70",
+                "value": 0.28194444444444444
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 50.3057,
+                "detail": "Run factor 98",
+                "value": 98
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 68.9858,
+                "detail": "DER proxy 0.705",
+                "value": 0.7051886792452831
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "Texas Rangers",
+            "abbreviation": "TEX",
+            "composite": 53.9059
+          },
+          "margin": 18.9752,
+          "bucket": "strong"
+        },
+        {
+          "gamePk": 823458,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T20:05:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Citizens Bank Park",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 114,
+            "teamName": "Cleveland Guardians",
+            "abbreviation": "CLE",
+            "probablePitcher": "Slade Cecconi",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 45.5119,
+            "spFip": 4.9801,
+            "pyth": 0.5505,
+            "bullpenEra": 2.7209,
+            "lineupWrcPlus": 99.6805,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 28.4168,
+                "detail": "K-BB% 10.0%",
+                "value": 0.09956709956709957
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 37.9966,
+                "detail": "FIP 4.98",
+                "value": 4.980134903510622
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 41.7689,
+                "detail": "99.7 vs RHP",
+                "value": 99.68047283524155
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 60.0956,
+                "detail": "Pyth W% 55.0%",
+                "value": 0.5504782001813344
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 43.3333,
+                "detail": "3-day relief workload: 102 pitches, 6.1 IP",
+                "value": 102
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 89.7859,
+                "detail": "15-day FIP 3.09, K-BB% 23.2%",
+                "value": 3.0884151582876926
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 24.0216,
+                "detail": "Proxy: wOBA 0.312, SLG 0.368",
+                "value": 0.3122536496350365
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 32.5512,
+                "detail": "Proxy: allowed wOBA 0.357, ERA 5.16",
+                "value": 0.35701298701298706
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 49.448,
+                "detail": "Run factor 103",
+                "value": 103
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 79.0289,
+                "detail": "DER proxy 0.713",
+                "value": 0.7132231404958678
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 143,
+            "teamName": "Philadelphia Phillies",
+            "abbreviation": "PHI",
+            "probablePitcher": "Zack Wheeler",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 61.9086,
+            "spFip": 2.3621,
+            "pyth": 0.4485,
+            "bullpenEra": 3.4839,
+            "lineupWrcPlus": 101.6923,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 61.3095,
+                "detail": "K-BB% 19.2%",
+                "value": 0.19166666666666668
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 100,
+                "detail": "FIP 2.36",
+                "value": 2.3620993688140084
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 43.8867,
+                "detail": "101.7 vs RHP",
+                "value": 101.69234345062851
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 39.6984,
+                "detail": "Pyth W% 44.8%",
+                "value": 0.44849188631140097
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 46.1111,
+                "detail": "3-day relief workload: 97 pitches, 5.0 IP",
+                "value": 97
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 92.2853,
+                "detail": "15-day FIP 3.04, K-BB% 28.7%",
+                "value": 3.040028061513499
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 40.8931,
+                "detail": "Proxy: wOBA 0.319, SLG 0.418",
+                "value": 0.3185559265442404
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 100,
+                "detail": "Proxy: allowed wOBA 0.231, ERA 1.99",
+                "value": 0.23108333333333336
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 51.3945,
+                "detail": "Run factor 103",
+                "value": 103
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 20.5032,
+                "detail": "DER proxy 0.666",
+                "value": 0.6664025356576861
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "home",
+            "teamName": "Philadelphia Phillies",
+            "abbreviation": "PHI",
+            "composite": 61.9086
+          },
+          "margin": 16.3967,
+          "bucket": "strong"
+        },
+        {
+          "gamePk": 823300,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-24T01:40:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Petco Park",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 133,
+            "teamName": "Athletics",
+            "abbreviation": "ATH",
+            "probablePitcher": "J.T. Ginn",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 53.947,
+            "spFip": 4.004,
+            "pyth": 0.4842,
+            "bullpenEra": 3.3022,
+            "lineupWrcPlus": 111.629,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 40.3589,
+                "detail": "K-BB% 13.3%",
+                "value": 0.1330049261083744
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 62.4,
+                "detail": "FIP 4.00",
+                "value": 4.003999573872108
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 54.3463,
+                "detail": "111.6 vs RHP",
+                "value": 111.62899653153848
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 46.8319,
+                "detail": "Pyth W% 48.4%",
+                "value": 0.4841595630353437
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 17.2222,
+                "detail": "3-day relief workload: 149 pitches, 9.2 IP",
+                "value": 149
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 80.2019,
+                "detail": "15-day FIP 2.89, K-BB% 17.8%",
+                "value": 2.8941705539711458
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 64.8436,
+                "detail": "Proxy: wOBA 0.350, SLG 0.448",
+                "value": 0.3496829477292202
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 81.2398,
+                "detail": "Proxy: allowed wOBA 0.284, ERA 2.98",
+                "value": 0.2836138613861386
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 48.2796,
+                "detail": "Run factor 95",
+                "value": 95
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 77.0349,
+                "detail": "DER proxy 0.712",
+                "value": 0.7116279069767442
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 135,
+            "teamName": "San Diego Padres",
+            "abbreviation": "SD",
+            "probablePitcher": "Lucas Giolito",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 38.9267,
+            "spFip": 4.2884,
+            "pyth": 0.5157,
+            "bullpenEra": 1.6364,
+            "lineupWrcPlus": 92.6054,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 0,
+                "detail": "K-BB% 0.0%",
+                "value": 0
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 55.2896,
+                "detail": "FIP 4.29",
+                "value": 4.288415158287693
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 34.3215,
+                "detail": "92.6 vs RHP",
+                "value": 92.60543171750982
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 53.1467,
+                "detail": "Pyth W% 51.6%",
+                "value": 0.515733456721218
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 22.7778,
+                "detail": "3-day relief workload: 139 pitches, 8.2 IP",
+                "value": 139
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 78.9843,
+                "detail": "15-day FIP 2.89, K-BB% 17.2%",
+                "value": 2.8884151582876925
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 10.3029,
+                "detail": "Proxy: wOBA 0.290, SLG 0.359",
+                "value": 0.2900907590759076
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 62.2222,
+                "detail": "Proxy: allowed wOBA 0.184, ERA 5.40",
+                "value": 0.184
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 51.1342,
+                "detail": "Run factor 95",
+                "value": 95
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 73.7489,
+                "detail": "DER proxy 0.709",
+                "value": 0.7089991589571067
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "Athletics",
+            "abbreviation": "ATH",
+            "composite": 53.947
+          },
+          "margin": 15.0203,
+          "bucket": "strong"
+        },
+        {
+          "gamePk": 823862,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T20:10:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "loanDepot park",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 121,
+            "teamName": "New York Mets",
+            "abbreviation": "NYM",
+            "probablePitcher": "Freddy Peralta",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 42.6964,
+            "spFip": 4.0271,
+            "pyth": 0.4698,
+            "bullpenEra": 1.7817,
+            "lineupWrcPlus": 93.7831,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 37.3084,
+                "detail": "K-BB% 12.4%",
+                "value": 0.12446351931330472
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 61.8234,
+                "detail": "FIP 4.03",
+                "value": 4.027065465036159
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 35.5612,
+                "detail": "93.8 vs RHP",
+                "value": 93.78311448069044
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 43.9627,
+                "detail": "Pyth W% 47.0%",
+                "value": 0.4698135050455267
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 0,
+                "detail": "3-day relief workload: 199 pitches, 14.1 IP",
+                "value": 199
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 63.2924,
+                "detail": "15-day FIP 3.23, K-BB% 12.4%",
+                "value": 3.2254709958511443
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 13.6943,
+                "detail": "Proxy: wOBA 0.294, SLG 0.364",
+                "value": 0.2937799043062201
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 76.0192,
+                "detail": "Proxy: allowed wOBA 0.288, ERA 3.31",
+                "value": 0.2882758620689655
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 51.474,
+                "detail": "Run factor 94",
+                "value": 94
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 72.4918,
+                "detail": "DER proxy 0.708",
+                "value": 0.7079934747145187
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 146,
+            "teamName": "Miami Marlins",
+            "abbreviation": "MIA",
+            "probablePitcher": "Max Meyer",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 53.5451,
+            "spFip": 3.0511,
+            "pyth": 0.4645,
+            "bullpenEra": 3.42,
+            "lineupWrcPlus": 99.7448,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 57.9365,
+                "detail": "K-BB% 18.2%",
+                "value": 0.18222222222222223
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 86.2213,
+                "detail": "FIP 3.05",
+                "value": 3.051148077542351
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 41.8366,
+                "detail": "99.7 vs RHP",
+                "value": 99.74476122782589
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 42.9092,
+                "detail": "Pyth W% 46.5%",
+                "value": 0.46454608807695535
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 4.4444,
+                "detail": "3-day relief workload: 172 pitches, 9.2 IP",
+                "value": 172
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 63.0829,
+                "detail": "15-day FIP 3.43, K-BB% 13.6%",
+                "value": 3.4284151582876925
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 28.2318,
+                "detail": "Proxy: wOBA 0.312, SLG 0.383",
+                "value": 0.31245503597122304
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 86.0963,
+                "detail": "Proxy: allowed wOBA 0.273, ERA 2.85",
+                "value": 0.2733777777777777
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 51.5829,
+                "detail": "Run factor 94",
+                "value": 94
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 90.7774,
+                "detail": "DER proxy 0.723",
+                "value": 0.7226219024780176
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "home",
+            "teamName": "Miami Marlins",
+            "abbreviation": "MIA",
+            "composite": 53.5451
+          },
+          "margin": 10.8487,
+          "bucket": "solid"
+        },
+        {
+          "gamePk": 825080,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-24T02:10:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Chase Field",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 115,
+            "teamName": "Colorado Rockies",
+            "abbreviation": "COL",
+            "probablePitcher": "Michael Lorenzen",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 32.2751,
+            "spFip": 5.2459,
+            "pyth": 0.3985,
+            "bullpenEra": 3.9194,
+            "lineupWrcPlus": 106.8734,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 21.4888,
+                "detail": "K-BB% 8.0%",
+                "value": 0.08016877637130802
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 31.3513,
+                "detail": "FIP 5.25",
+                "value": 5.245949404863035
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 49.3405,
+                "detail": "106.9 vs RHP",
+                "value": 106.87344318046014
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 29.6976,
+                "detail": "Pyth W% 39.8%",
+                "value": 0.39848776836857164
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 2.2222,
+                "detail": "3-day relief workload: 176 pitches, 10.1 IP",
+                "value": 176
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 50.7973,
+                "detail": "15-day FIP 3.60, K-BB% 9.3%",
+                "value": 3.604544190545757
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 52.1104,
+                "detail": "Proxy: wOBA 0.335, SLG 0.429",
+                "value": 0.33478595890410956
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 0,
+                "detail": "Proxy: allowed wOBA 0.420, ERA 7.03",
+                "value": 0.42046610169491533
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 49.9967,
+                "detail": "Run factor 101",
+                "value": 101
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 49.6324,
+                "detail": "DER proxy 0.690",
+                "value": 0.6897058823529412
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 109,
+            "teamName": "Arizona Diamondbacks",
+            "abbreviation": "AZ",
+            "probablePitcher": "Zac Gallen",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 43.0068,
+            "spFip": 4.5986,
+            "pyth": 0.496,
+            "bullpenEra": 2.4796,
+            "lineupWrcPlus": 101.2485,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 24.2725,
+                "detail": "K-BB% 8.8%",
+                "value": 0.08796296296296297
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 47.5345,
+                "detail": "FIP 4.60",
+                "value": 4.598619239920346
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 43.4195,
+                "detail": "101.2 vs RHP",
+                "value": 101.24853258353579
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 49.1903,
+                "detail": "Pyth W% 49.6%",
+                "value": 0.49595138949662787
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 15.5556,
+                "detail": "3-day relief workload: 152 pitches, 8.0 IP",
+                "value": 152
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 73.0956,
+                "detail": "15-day FIP 2.60, K-BB% 12.8%",
+                "value": 2.5986192399203456
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 36.3001,
+                "detail": "Proxy: wOBA 0.317, SLG 0.404",
+                "value": 0.31716566866267465
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 40.9096,
+                "detail": "Proxy: allowed wOBA 0.345, ERA 4.78",
+                "value": 0.3446046511627907
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 49.953,
+                "detail": "Run factor 101",
+                "value": 101
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 94.4586,
+                "detail": "DER proxy 0.726",
+                "value": 0.72556684910086
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "home",
+            "teamName": "Arizona Diamondbacks",
+            "abbreviation": "AZ",
+            "composite": 43.0068
+          },
+          "margin": 10.7317,
+          "bucket": "solid"
+        },
+        {
+          "gamePk": 824109,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T20:10:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Kauffman Stadium",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 136,
+            "teamName": "Seattle Mariners",
+            "abbreviation": "SEA",
+            "probablePitcher": "George Kirby",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 51.9552,
+            "spFip": 3.5352,
+            "pyth": 0.5289,
+            "bullpenEra": 2.7794,
+            "lineupWrcPlus": 104.6201,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 44.0808,
+                "detail": "K-BB% 14.3%",
+                "value": 0.14342629482071714
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 74.1194,
+                "detail": "FIP 3.54",
+                "value": 3.5352236689259904
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 46.9685,
+                "detail": "104.6 vs RHP",
+                "value": 104.62010466376046
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 55.7838,
+                "detail": "Pyth W% 52.9%",
+                "value": 0.5289189516908981
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 19.4444,
+                "detail": "3-day relief workload: 145 pitches, 7.1 IP",
+                "value": 145
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 63.1958,
+                "detail": "15-day FIP 3.82, K-BB% 16.1%",
+                "value": 3.816356334758281
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 41.1689,
+                "detail": "Proxy: wOBA 0.328, SLG 0.402",
+                "value": 0.32772727272727276
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 71.7508,
+                "detail": "Proxy: allowed wOBA 0.296, ERA 3.45",
+                "value": 0.2964143426294821
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 49.9937,
+                "detail": "Run factor 99",
+                "value": 99
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 58.5906,
+                "detail": "DER proxy 0.697",
+                "value": 0.6968724939855653
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 118,
+            "teamName": "Kansas City Royals",
+            "abbreviation": "KC",
+            "probablePitcher": "Stephen Kolek",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 41.7788,
+            "spFip": 4.8531,
+            "pyth": 0.4306,
+            "bullpenEra": 3.5217,
+            "lineupWrcPlus": 99.9698,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 34.265,
+                "detail": "K-BB% 11.6%",
+                "value": 0.11594202898550725
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 41.172,
+                "detail": "FIP 4.85",
+                "value": 4.853121040640634
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 42.0735,
+                "detail": "100.0 vs RHP",
+                "value": 99.96982737956385
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 36.1202,
+                "detail": "Pyth W% 43.1%",
+                "value": 0.4306012191347036
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 37.2222,
+                "detail": "3-day relief workload: 113 pitches, 6.0 IP",
+                "value": 113
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 41.0614,
+                "detail": "15-day FIP 4.41, K-BB% 10.1%",
+                "value": 4.414502114809432
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 31.9068,
+                "detail": "Proxy: wOBA 0.313, SLG 0.395",
+                "value": 0.3131600660066007
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 69.7005,
+                "detail": "Proxy: allowed wOBA 0.276, ERA 4.24",
+                "value": 0.276231884057971
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 49.8559,
+                "detail": "Run factor 99",
+                "value": 99
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 72.702,
+                "detail": "DER proxy 0.708",
+                "value": 0.7081615828524319
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "Seattle Mariners",
+            "abbreviation": "SEA",
+            "composite": 51.9552
+          },
+          "margin": 10.1765,
+          "bucket": "solid"
+        },
+        {
+          "gamePk": 824920,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T20:10:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Truist Park",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 120,
+            "teamName": "Washington Nationals",
+            "abbreviation": "WSH",
+            "probablePitcher": "Jake Irvin",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 41.2521,
+            "spFip": 4.5884,
+            "pyth": 0.4734,
+            "bullpenEra": 5.5049,
+            "lineupWrcPlus": 102.5459,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 43.3962,
+                "detail": "K-BB% 14.2%",
+                "value": 0.14150943396226415
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 47.7896,
+                "detail": "FIP 4.59",
+                "value": 4.588415158287693
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 44.7852,
+                "detail": "102.5 vs RHP",
+                "value": 102.54593966592107
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 44.6856,
+                "detail": "Pyth W% 47.3%",
+                "value": 0.4734278264355277
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 0,
+                "detail": "3-day relief workload: 263 pitches, 15.2 IP",
+                "value": 263
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 49.9629,
+                "detail": "15-day FIP 4.24, K-BB% 12.9%",
+                "value": 4.238900595180897
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 43.0468,
+                "detail": "Proxy: wOBA 0.321, SLG 0.421",
+                "value": 0.3212298558100085
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 28.5178,
+                "detail": "Proxy: allowed wOBA 0.348, ERA 5.79",
+                "value": 0.3481132075471698
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 49.9986,
+                "detail": "Run factor 101",
+                "value": 101
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 73.0685,
+                "detail": "DER proxy 0.708",
+                "value": 0.7084548104956268
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 144,
+            "teamName": "Atlanta Braves",
+            "abbreviation": "ATL",
+            "probablePitcher": "Grant Holmes",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 50.436,
+            "spFip": 4.7997,
+            "pyth": 0.7019,
+            "bullpenEra": 2.9137,
+            "lineupWrcPlus": 111.9287,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 21.2864,
+                "detail": "K-BB% 8.0%",
+                "value": 0.07960199004975124
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 42.5079,
+                "detail": "FIP 4.80",
+                "value": 4.799682763921496
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 54.6618,
+                "detail": "111.9 vs RHP",
+                "value": 111.92867883742407
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 90.3734,
+                "detail": "Pyth W% 70.2%",
+                "value": 0.7018668121435806
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 19.4444,
+                "detail": "3-day relief workload: 145 pitches, 9.2 IP",
+                "value": 145
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 42.8205,
+                "detail": "15-day FIP 4.56, K-BB% 11.8%",
+                "value": 4.556041057568268
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 69.7184,
+                "detail": "Proxy: wOBA 0.351, SLG 0.464",
+                "value": 0.3506217162872154
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 67.5788,
+                "detail": "Proxy: allowed wOBA 0.297, ERA 3.80",
+                "value": 0.2972636815920398
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 50.2644,
+                "detail": "Run factor 101",
+                "value": 101
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 100,
+                "detail": "DER proxy 0.751",
+                "value": 0.7508361204013378
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "home",
+            "teamName": "Atlanta Braves",
+            "abbreviation": "ATL",
+            "composite": 50.436
+          },
+          "margin": 9.1839,
+          "bucket": "solid"
+        },
+        {
+          "gamePk": 824840,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T20:05:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Oriole Park at Camden Yards",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 116,
+            "teamName": "Detroit Tigers",
+            "abbreviation": "DET",
+            "probablePitcher": "Framber Valdez",
+            "starterKnown": true,
+            "pitcherHand": "L",
+            "composite": 41.3052,
+            "spFip": 4.0521,
+            "pyth": 0.4443,
+            "bullpenEra": 3.7772,
+            "lineupWrcPlus": 104.3197,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 27.7003,
+                "detail": "K-BB% 9.8%",
+                "value": 0.0975609756097561
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 61.1987,
+                "detail": "FIP 4.05",
+                "value": 4.0520515219240565
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 46.6524,
+                "detail": "104.3 vs RHP",
+                "value": 104.31973643223157
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 38.8635,
+                "detail": "Pyth W% 44.4%",
+                "value": 0.4443173575699467
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 0,
+                "detail": "3-day relief workload: 222 pitches, 12.1 IP",
+                "value": 222
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 46.8353,
+                "detail": "15-day FIP 4.04, K-BB% 10.3%",
+                "value": 4.036601686785102
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 41.5689,
+                "detail": "Proxy: wOBA 0.327, SLG 0.405",
+                "value": 0.326786355475763
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 52.6477,
+                "detail": "Proxy: allowed wOBA 0.316, ERA 4.58",
+                "value": 0.3160569105691057
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 49.8889,
+                "detail": "Run factor 99",
+                "value": 99
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 75.684,
+                "detail": "DER proxy 0.711",
+                "value": 0.7105471847739888
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 110,
+            "teamName": "Baltimore Orioles",
+            "abbreviation": "BAL",
+            "probablePitcher": "Brandon Young",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 32.1825,
+            "spFip": 5.212,
+            "pyth": 0.3985,
+            "bullpenEra": 5.1592,
+            "lineupWrcPlus": 96.4709,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 14.1791,
+                "detail": "K-BB% 6.0%",
+                "value": 0.05970149253731343
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 32.1997,
+                "detail": "FIP 5.21",
+                "value": 5.21201066390567
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 38.3904,
+                "detail": "96.5 vs LHP",
+                "value": 96.47090984990797
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 29.7035,
+                "detail": "Pyth W% 39.9%",
+                "value": 0.3985172602713883
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 12.7778,
+                "detail": "3-day relief workload: 157 pitches, 10.0 IP",
+                "value": 157
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 61.0456,
+                "detail": "15-day FIP 3.32, K-BB% 12.0%",
+                "value": 3.3177145213450174
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 19.9317,
+                "detail": "Proxy: wOBA 0.302, SLG 0.372",
+                "value": 0.3021995464852608
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 51.4428,
+                "detail": "Proxy: allowed wOBA 0.331, ERA 4.25",
+                "value": 0.3306716417910448
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 49.8927,
+                "detail": "Run factor 99",
+                "value": 99
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 51.3846,
+                "detail": "DER proxy 0.691",
+                "value": 0.6911076443057722
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "Detroit Tigers",
+            "abbreviation": "DET",
+            "composite": 41.3052
+          },
+          "margin": 9.1227,
+          "bucket": "solid"
+        },
+        {
+          "gamePk": 824516,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T23:15:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Great American Ball Park",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 138,
+            "teamName": "St. Louis Cardinals",
+            "abbreviation": "STL",
+            "probablePitcher": "Kyle Leahy",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 39.7745,
+            "spFip": 4.8183,
+            "pyth": 0.4897,
+            "bullpenEra": 3.7969,
+            "lineupWrcPlus": 105.0756,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 17.2474,
+                "detail": "K-BB% 6.8%",
+                "value": 0.06829268292682927
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 42.0414,
+                "detail": "FIP 4.82",
+                "value": 4.818342165586962
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 47.448,
+                "detail": "105.1 vs RHP",
+                "value": 105.07559077703577
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 47.9347,
+                "detail": "Pyth W% 49.0%",
+                "value": 0.4896737161948237
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 28.3333,
+                "detail": "3-day relief workload: 129 pitches, 7.2 IP",
+                "value": 129
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 40.1856,
+                "detail": "15-day FIP 4.85, K-BB% 12.4%",
+                "value": 4.846227658287693
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 45.8733,
+                "detail": "Proxy: wOBA 0.329, SLG 0.417",
+                "value": 0.3291541038525963
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 46.2222,
+                "detail": "Proxy: allowed wOBA 0.357, ERA 3.94",
+                "value": 0.35666666666666663
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 50.2224,
+                "detail": "Run factor 107",
+                "value": 107
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 68.4246,
+                "detail": "DER proxy 0.705",
+                "value": 0.7047397047397048
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 113,
+            "teamName": "Cincinnati Reds",
+            "abbreviation": "CIN",
+            "probablePitcher": "Chase Petty",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 33.3855,
+            "spFip": 6.0884,
+            "pyth": 0.4456,
+            "bullpenEra": 5.3182,
+            "lineupWrcPlus": 96.9594,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 0,
+                "detail": "K-BB% -4.3%",
+                "value": -0.043478260869565216
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 10.2896,
+                "detail": "FIP 6.09",
+                "value": 6.088415158287693
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 38.9046,
+                "detail": "97.0 vs RHP",
+                "value": 96.95937421318948
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 39.1281,
+                "detail": "Pyth W% 44.6%",
+                "value": 0.44564044153282223
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 72.2222,
+                "detail": "3-day relief workload: 50 pitches, 3.2 IP",
+                "value": 50
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 36.1974,
+                "detail": "15-day FIP 5.38, K-BB% 14.1%",
+                "value": 5.3838697037422385
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 22.3528,
+                "detail": "Proxy: wOBA 0.304, SLG 0.378",
+                "value": 0.30372968349016255
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 61.3623,
+                "detail": "Proxy: allowed wOBA 0.284, ERA 4.76",
+                "value": 0.28391304347826085
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 46.353,
+                "detail": "Run factor 107",
+                "value": 107
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 85.8119,
+                "detail": "DER proxy 0.719",
+                "value": 0.7186495176848875
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "St. Louis Cardinals",
+            "abbreviation": "STL",
+            "composite": 39.7745
+          },
+          "margin": 6.389,
+          "bucket": "lean"
+        },
+        {
+          "gamePk": 823787,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T23:15:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "American Family Field",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 119,
+            "teamName": "Los Angeles Dodgers",
+            "abbreviation": "LAD",
+            "probablePitcher": "Roki Sasaki",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 51.6194,
+            "spFip": 5.5228,
+            "pyth": 0.6962,
+            "bullpenEra": 1.7113,
+            "lineupWrcPlus": 106.4757,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 38.2399,
+                "detail": "K-BB% 12.7%",
+                "value": 0.1270718232044199
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 24.429,
+                "detail": "FIP 5.52",
+                "value": 5.522841387795889
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 48.9218,
+                "detail": "106.5 vs LHP",
+                "value": 106.4757132535419
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 89.2355,
+                "detail": "Pyth W% 69.6%",
+                "value": 0.6961773879469771
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 58.3333,
+                "detail": "3-day relief workload: 75 pitches, 7.0 IP",
+                "value": 75
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 67.0374,
+                "detail": "15-day FIP 2.73, K-BB% 10.9%",
+                "value": 2.7292602287102277
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 47.2396,
+                "detail": "Proxy: wOBA 0.334, SLG 0.414",
+                "value": 0.3335400516795865
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 29.1852,
+                "detail": "Proxy: allowed wOBA 0.369, ERA 5.09",
+                "value": 0.36944444444444446
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 50,
+                "detail": "Run factor 100",
+                "value": 100
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 100,
+                "detail": "DER proxy 0.738",
+                "value": 0.7383820998278829
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 158,
+            "teamName": "Milwaukee Brewers",
+            "abbreviation": "MIL",
+            "probablePitcher": "Robert Gasser",
+            "starterKnown": true,
+            "pitcherHand": "L",
+            "composite": 46.2127,
+            "spFip": 5.3384,
+            "pyth": 0.6733,
+            "bullpenEra": 1.875,
+            "lineupWrcPlus": 107.1554,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 10.7143,
+                "detail": "K-BB% 5.0%",
+                "value": 0.05
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 29.0396,
+                "detail": "FIP 5.34",
+                "value": 5.338415158287693
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 49.6372,
+                "detail": "107.2 vs RHP",
+                "value": 107.1553516327353
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 84.662,
+                "detail": "Pyth W% 67.3%",
+                "value": 0.6733097872392608
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 33.3333,
+                "detail": "3-day relief workload: 120 pitches, 6.0 IP",
+                "value": 120
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 88.1797,
+                "detail": "15-day FIP 2.59, K-BB% 19.4%",
+                "value": 2.5884151582876926
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 44.1763,
+                "detail": "Proxy: wOBA 0.336, SLG 0.399",
+                "value": 0.3356690500510725
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 42.7222,
+                "detail": "Proxy: allowed wOBA 0.348, ERA 4.50",
+                "value": 0.3485
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 50,
+                "detail": "Run factor 100",
+                "value": 100
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 76.4934,
+                "detail": "DER proxy 0.711",
+                "value": 0.7111947318908749
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "Los Angeles Dodgers",
+            "abbreviation": "LAD",
+            "composite": 51.6194
+          },
+          "margin": 5.4067,
+          "bucket": "lean"
+        },
+        {
+          "gamePk": 824760,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T20:10:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Fenway Park",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 142,
+            "teamName": "Minnesota Twins",
+            "abbreviation": "MIN",
+            "probablePitcher": "Taj Bradley",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 52.9958,
+            "spFip": 3.4714,
+            "pyth": 0.5019,
+            "bullpenEra": 2.34,
+            "lineupWrcPlus": 100.3939,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 55.6712,
+                "detail": "K-BB% 17.6%",
+                "value": 0.17587939698492464
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 75.7152,
+                "detail": "FIP 3.47",
+                "value": 3.471393881691948
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 42.5199,
+                "detail": "100.4 vs LHP",
+                "value": 100.39394578951355
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 50.3853,
+                "detail": "Pyth W% 50.2%",
+                "value": 0.5019263091047707
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 35.5556,
+                "detail": "3-day relief workload: 116 pitches, 8.0 IP",
+                "value": 116
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 50.9724,
+                "detail": "15-day FIP 3.21, K-BB% 6.9%",
+                "value": 3.2084151582876927
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 19.259,
+                "detail": "Proxy: wOBA 0.314, SLG 0.347",
+                "value": 0.3144886363636364
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 79.1717,
+                "detail": "Proxy: allowed wOBA 0.293, ERA 2.87",
+                "value": 0.29348484848484846
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 50.8752,
+                "detail": "Run factor 105",
+                "value": 105
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 79.9396,
+                "detail": "DER proxy 0.714",
+                "value": 0.7139516757599376
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 111,
+            "teamName": "Boston Red Sox",
+            "abbreviation": "BOS",
+            "probablePitcher": "Jovani Morán",
+            "starterKnown": true,
+            "pitcherHand": "L",
+            "composite": 47.7961,
+            "spFip": 4.6079,
+            "pyth": 0.4693,
+            "bullpenEra": 1.9286,
+            "lineupWrcPlus": 91.6893,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 43.8776,
+                "detail": "K-BB% 14.3%",
+                "value": 0.14285714285714285
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 47.3026,
+                "detail": "FIP 4.61",
+                "value": 4.607895677768212
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 33.3571,
+                "detail": "91.7 vs RHP",
+                "value": 91.6892504356539
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 43.8581,
+                "detail": "Pyth W% 46.9%",
+                "value": 0.46929069898148057
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 40,
+                "detail": "3-day relief workload: 108 pitches, 5.2 IP",
+                "value": 108
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 85.4418,
+                "detail": "15-day FIP 2.92, K-BB% 20.2%",
+                "value": 2.921748491621026
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 5.4336,
+                "detail": "Proxy: wOBA 0.287, SLG 0.347",
+                "value": 0.2872207792207792
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 84.6538,
+                "detail": "Proxy: allowed wOBA 0.279, ERA 2.81",
+                "value": 0.2790384615384615
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 48.1617,
+                "detail": "Run factor 105",
+                "value": 105
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 92.4208,
+                "detail": "DER proxy 0.724",
+                "value": 0.7239366138448707
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "Minnesota Twins",
+            "abbreviation": "MIN",
+            "composite": 52.9958
+          },
+          "margin": 5.1997,
+          "bucket": "lean"
+        },
+        {
+          "gamePk": 824674,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T18:20:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Wrigley Field",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 117,
+            "teamName": "Houston Astros",
+            "abbreviation": "HOU",
+            "probablePitcher": "Kai-Wei Teng",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 50.186,
+            "spFip": 3.7658,
+            "pyth": 0.4017,
+            "bullpenEra": 3.5735,
+            "lineupWrcPlus": 103.6535,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 44.2857,
+                "detail": "K-BB% 14.4%",
+                "value": 0.144
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 68.3541,
+                "detail": "FIP 3.77",
+                "value": 3.765834513126402
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 45.951,
+                "detail": "103.7 vs RHP",
+                "value": 103.65347088723776
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 30.3377,
+                "detail": "Pyth W% 40.2%",
+                "value": 0.40168865219826183
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 55.5556,
+                "detail": "3-day relief workload: 80 pitches, 6.0 IP",
+                "value": 80
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 34.3899,
+                "detail": "15-day FIP 4.10, K-BB% 5.2%",
+                "value": 4.103121040640634
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 42.2327,
+                "detail": "Proxy: wOBA 0.325, SLG 0.412",
+                "value": 0.32469924812030077
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 87.0889,
+                "detail": "Proxy: allowed wOBA 0.278, ERA 2.61",
+                "value": 0.2784
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 50.8731,
+                "detail": "Run factor 104",
+                "value": 104
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 63.3091,
+                "detail": "DER proxy 0.701",
+                "value": 0.7006472491909386
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 112,
+            "teamName": "Chicago Cubs",
+            "abbreviation": "CHC",
+            "probablePitcher": "Colin Rea",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 45.1909,
+            "spFip": 4.0671,
+            "pyth": 0.5505,
+            "bullpenEra": 2.8052,
+            "lineupWrcPlus": 101.8597,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 37.7157,
+                "detail": "K-BB% 12.6%",
+                "value": 0.12560386473429952
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 60.8215,
+                "detail": "FIP 4.07",
+                "value": 4.067138562543012
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 44.0629,
+                "detail": "101.9 vs RHP",
+                "value": 101.85972839646415
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 60.0992,
+                "detail": "Pyth W% 55.0%",
+                "value": 0.5504960146711999
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 5,
+                "detail": "3-day relief workload: 171 pitches, 10.1 IP",
+                "value": 171
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 46.1449,
+                "detail": "15-day FIP 4.30, K-BB% 11.6%",
+                "value": 4.2962073660799005
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 32.0777,
+                "detail": "Proxy: wOBA 0.319, SLG 0.385",
+                "value": 0.3190802675585284
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 43.2157,
+                "detail": "Proxy: allowed wOBA 0.331, ERA 4.98",
+                "value": 0.33101941747572816
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 50.3661,
+                "detail": "Run factor 104",
+                "value": 104
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 98.6201,
+                "detail": "DER proxy 0.729",
+                "value": 0.7288961038961039
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "Houston Astros",
+            "abbreviation": "HOU",
+            "composite": 50.186
+          },
+          "margin": 4.9951,
+          "bucket": "lean"
+        },
+        {
+          "gamePk": 824518,
+          "officialDate": "2026-05-23",
+          "gameDate": "2026-05-23T17:10:00Z",
+          "statusAtCapture": "Scheduled",
+          "venue": "Great American Ball Park",
+          "actualAtCapture": {
+            "isFinal": false,
+            "hasScore": false,
+            "detailedState": "Scheduled",
+            "scoreText": ""
+          },
+          "away": {
+            "side": "away",
+            "teamId": 138,
+            "teamName": "St. Louis Cardinals",
+            "abbreviation": "STL",
+            "probablePitcher": "Andre Pallante",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 43.9743,
+            "spFip": 4.3945,
+            "pyth": 0.4897,
+            "bullpenEra": 3.7969,
+            "lineupWrcPlus": 105.0756,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 28.0684,
+                "detail": "K-BB% 9.9%",
+                "value": 0.09859154929577464
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 52.6366,
+                "detail": "FIP 4.39",
+                "value": 4.394537607267284
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 47.448,
+                "detail": "105.1 vs RHP",
+                "value": 105.07559077703577
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 47.9347,
+                "detail": "Pyth W% 49.0%",
+                "value": 0.4896737161948237
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 28.3333,
+                "detail": "3-day relief workload: 129 pitches, 7.2 IP",
+                "value": 129
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 40.1856,
+                "detail": "15-day FIP 4.85, K-BB% 12.4%",
+                "value": 4.846227658287693
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 45.8733,
+                "detail": "Proxy: wOBA 0.329, SLG 0.417",
+                "value": 0.3291541038525963
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 58.5227,
+                "detail": "Proxy: allowed wOBA 0.316, ERA 4.04",
+                "value": 0.3164319248826291
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 50.8817,
+                "detail": "Run factor 107",
+                "value": 107
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 68.4246,
+                "detail": "DER proxy 0.705",
+                "value": 0.7047397047397048
+              }
+            ]
+          },
+          "home": {
+            "side": "home",
+            "teamId": 113,
+            "teamName": "Cincinnati Reds",
+            "abbreviation": "CIN",
+            "probablePitcher": "Chris Paddack",
+            "starterKnown": true,
+            "pitcherHand": "R",
+            "composite": 41.6005,
+            "spFip": 4.6865,
+            "pyth": 0.4456,
+            "bullpenEra": 5.3182,
+            "lineupWrcPlus": 96.9594,
+            "components": [
+              {
+                "id": "spKbb",
+                "label": "SP K-BB%",
+                "weight": 0.17,
+                "score": 33.0093,
+                "detail": "K-BB% 11.2%",
+                "value": 0.11242603550295859
+              },
+              {
+                "id": "spFip",
+                "label": "SP FIP",
+                "weight": 0.15,
+                "score": 45.3364,
+                "detail": "FIP 4.69",
+                "value": 4.686545999409188
+              },
+              {
+                "id": "lineupWrc",
+                "label": "Lineup wRC+",
+                "weight": 0.14,
+                "score": 38.9046,
+                "detail": "97.0 vs RHP",
+                "value": 96.95937421318948
+              },
+              {
+                "id": "pyth",
+                "label": "Pythagorean W%",
+                "weight": 0.12,
+                "score": 39.1281,
+                "detail": "Pyth W% 44.6%",
+                "value": 0.44564044153282223
+              },
+              {
+                "id": "bullpenAvailability",
+                "label": "Bullpen availability",
+                "weight": 0.1,
+                "score": 72.2222,
+                "detail": "3-day relief workload: 50 pitches, 3.2 IP",
+                "value": 50
+              },
+              {
+                "id": "bullpenSkill",
+                "label": "Bullpen skill",
+                "weight": 0.09,
+                "score": 36.1974,
+                "detail": "15-day FIP 5.38, K-BB% 14.1%",
+                "value": 5.3838697037422385
+              },
+              {
+                "id": "lineupQuality",
+                "label": "Lineup quality",
+                "weight": 0.08,
+                "score": 22.3528,
+                "detail": "Proxy: wOBA 0.304, SLG 0.378",
+                "value": 0.30372968349016255
+              },
+              {
+                "id": "spContact",
+                "label": "SP contact allowed",
+                "weight": 0.06,
+                "score": 15.3175,
+                "detail": "Proxy: allowed wOBA 0.364, ERA 7.07",
+                "value": 0.36404761904761906
+              },
+              {
+                "id": "park",
+                "label": "Park fit",
+                "weight": 0.05,
+                "score": 48.5337,
+                "detail": "Run factor 107",
+                "value": 107
+              },
+              {
+                "id": "defense",
+                "label": "Defense proxy",
+                "weight": 0.04,
+                "score": 85.8119,
+                "detail": "DER proxy 0.719",
+                "value": 0.7186495176848875
+              }
+            ]
+          },
+          "projectionAvailable": true,
+          "projectionNote": "",
+          "missingStarters": [],
+          "winner": {
+            "side": "away",
+            "teamName": "St. Louis Cardinals",
+            "abbreviation": "STL",
+            "composite": 43.9743
+          },
+          "margin": 2.3739,
+          "bucket": "tight"
+        }
+      ]
+    }
+  ],
+  "updatedAt": "2026-05-23T14:28:51.436Z"
+}

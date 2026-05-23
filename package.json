@@ -1,0 +1,12 @@
+{
+  "name": "sports-scorecard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local sports scorecard app with model-based MLB winner projections.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
