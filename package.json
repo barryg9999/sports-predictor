@@ -2,7 +2,6 @@
   "name": "sports-scorecard",
   "version": "1.0.0",
   "private": true,
-  "description": "Sports scorecard app",
   "scripts": {
     "build": "echo \"No build needed\""
   }

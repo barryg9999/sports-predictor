@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "styles.css", "use": "@vercel/static" },
+    { "src": "mlb.js", "use": "@vercel/static" },
+    { "src": "data/**", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/styles.css", "dest": "/styles.css" },
+    { "src": "/mlb.js", "dest": "/mlb.js" },
+    { "src": "/data/(.*)", "dest": "/data/$1" }
+  ]
+}
