@@ -178,6 +178,9 @@ function sideCard(side, projectionAvailable) {
       </div>
     `)
     .join("");
+  const subValues = side.modelSubValues
+    ? `<p class="detail-foot">Model sub-values: expected SP ${score(side.modelSubValues.expectedInnings)} IP; rest penalty ${precise.format(side.modelSubValues.restPenalty)}; bullpen exposure ${pct.format(side.modelSubValues.bullpenExposure)}; wind ${precise.format(side.modelSubValues.windFactor)}; umpire zone ${precise.format(side.modelSubValues.umpireZoneFactor)}.</p>`
+    : "";
   return `
     <div class="team-score-card">
       <div class="team-score-head">
@@ -193,6 +196,7 @@ function sideCard(side, projectionAvailable) {
         <summary>Lineup proxy hitters</summary>
         <div>${hitters || "<span>No hitter split data available.</span>"}</div>
       </details>
+      ${subValues}
       <p class="detail-foot">Bullpen window: ${esc(side.bullpen.startDate)} to ${esc(side.bullpen.endDate)}; ${esc(side.bullpen.innings)} IP across ${side.bullpen.appearances} relief appearances.</p>
     </div>
   `;
@@ -206,6 +210,7 @@ function renderSelectedGame() {
   const game = currentScorecard.games.find((item) => item.gamePk === selectedGamePk) || currentScorecard.games[0];
   selectedGamePk = game.gamePk;
   const marginText = game.projectionAvailable ? `margin ${score(game.margin)}` : "winner cannot be projected";
+  const componentCount = currentScorecard?.model?.components?.length || 5;
   gameDetails.innerHTML = `
     <article class="game-detail-card selected-game-card">
       <div class="game-title">
@@ -219,7 +224,7 @@ function renderSelectedGame() {
         </div>
       </div>
       ${game.projectionAvailable ? "" : `<p class="projection-warning">${esc(game.projectionNote)}</p>`}
-      <p class="selected-note">Six values are shown for each team: composite plus the five weighted scoring components.</p>
+      <p class="selected-note">${componentCount + 1} values are shown for each team: composite plus the ${componentCount} weighted scoring components.</p>
       <div class="matchup-grid">
         ${sideCard(game.away, game.projectionAvailable)}
         ${sideCard(game.home, game.projectionAvailable)}

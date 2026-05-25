@@ -2,6 +2,7 @@ const http = require("http");
 const fs = require("fs/promises");
 const fsSync = require("fs");
 const path = require("path");
+const apiLib = require("./api/_lib.cjs");
 
 const root = __dirname;
 loadLocalEnv(path.join(root, ".env.local"));
@@ -1646,11 +1647,15 @@ async function serveStatic(req, res) {
     }
     const date = url.searchParams.get("date") || todayIsoDate();
     const modelId = url.searchParams.get("model") || "core5";
-    if (!validDate(date)) {
+    if (!apiLib.validDate(date)) {
       send(res, 400, "Use a date in YYYY-MM-DD format.");
       return;
     }
-    const scorecard = await buildMlbScorecard(date, modelId);
+    if (!apiLib.mlbModels.some((model) => model.id === modelId)) {
+      send(res, 400, "Unknown MLB model.");
+      return;
+    }
+    const scorecard = await apiLib.buildMlbScorecard(date, modelId);
     send(res, 200, JSON.stringify(scorecard), "application/json; charset=utf-8");
     return;
   }
@@ -1662,15 +1667,15 @@ async function serveStatic(req, res) {
     }
     const date = url.searchParams.get("date") || todayIsoDate();
     const modelId = url.searchParams.get("model") || "core5";
-    if (!validDate(date)) {
+    if (!apiLib.validDate(date)) {
       send(res, 400, "Use a date in YYYY-MM-DD format.");
       return;
     }
-    if (!mlbModels.some((model) => model.id === modelId)) {
+    if (!apiLib.mlbModels.some((model) => model.id === modelId)) {
       send(res, 400, "Unknown MLB model.");
       return;
     }
-    const odds = await buildMlbOddsComparison(date, modelId);
+    const odds = await apiLib.buildMlbOddsComparison(date, modelId);
     send(res, 200, JSON.stringify(odds), "application/json; charset=utf-8");
     return;
   }
@@ -1682,16 +1687,16 @@ async function serveStatic(req, res) {
     }
     const date = url.searchParams.get("date") || "";
     const modelId = url.searchParams.get("model") || "all";
-    if (date && !validDate(date)) {
+    if (date && !apiLib.validDate(date)) {
       send(res, 400, "Use date in YYYY-MM-DD format.");
       return;
     }
-    if (modelId !== "all" && !mlbModels.some((model) => model.id === modelId)) {
+    if (modelId !== "all" && !apiLib.mlbModels.some((model) => model.id === modelId)) {
       send(res, 400, "Unknown MLB model.");
       return;
     }
     if (req.method === "POST") {
-      const snapshot = await saveMlbPredictionSnapshots(date || todayIsoDate(), modelId);
+      const snapshot = await apiLib.saveMlbPredictionSnapshots(date || apiLib.todayIsoDate(), modelId);
       send(res, 200, JSON.stringify(snapshot), "application/json; charset=utf-8");
       return;
     }
@@ -1699,7 +1704,7 @@ async function serveStatic(req, res) {
       send(res, 405, "Method not allowed");
       return;
     }
-    const inventory = await listMlbSnapshotInventory(date || null, modelId);
+    const inventory = await apiLib.listMlbSnapshotInventory(date || null, modelId);
     send(res, 200, JSON.stringify(inventory), "application/json; charset=utf-8");
     return;
   }
@@ -1709,24 +1714,24 @@ async function serveStatic(req, res) {
       send(res, 400, "Only MLB is available right now.");
       return;
     }
-    const startDate = url.searchParams.get("startDate") || addDays(todayIsoDate(), -7);
-    const endDate = url.searchParams.get("endDate") || addDays(todayIsoDate(), -1);
+    const startDate = url.searchParams.get("startDate") || apiLib.addDays(apiLib.todayIsoDate(), -7);
+    const endDate = url.searchParams.get("endDate") || apiLib.addDays(apiLib.todayIsoDate(), -1);
     const modelId = url.searchParams.get("model") || "all";
     const source = url.searchParams.get("source") || "snapshots";
-    if (!validDate(startDate) || !validDate(endDate)) {
+    if (!apiLib.validDate(startDate) || !apiLib.validDate(endDate)) {
       send(res, 400, "Use startDate and endDate in YYYY-MM-DD format.");
       return;
     }
-    const days = daysBetween(startDate, endDate);
+    const days = apiLib.daysBetween(startDate, endDate);
     if (days < 0) {
       send(res, 400, "Start date must be before or equal to end date.");
       return;
     }
-    if (days + 1 > BACKTEST_MAX_DAYS) {
-      send(res, 400, `Backtest range is limited to ${BACKTEST_MAX_DAYS} days at a time.`);
+    if (days + 1 > apiLib.BACKTEST_MAX_DAYS) {
+      send(res, 400, `Backtest range is limited to ${apiLib.BACKTEST_MAX_DAYS} days at a time.`);
       return;
     }
-    if (modelId !== "all" && !mlbModels.some((model) => model.id === modelId)) {
+    if (modelId !== "all" && !apiLib.mlbModels.some((model) => model.id === modelId)) {
       send(res, 400, "Unknown MLB model.");
       return;
     }
@@ -1734,7 +1739,7 @@ async function serveStatic(req, res) {
       send(res, 400, "Unknown backtest source.");
       return;
     }
-    const backtest = await buildMlbBacktest(startDate, endDate, modelId, source);
+    const backtest = await apiLib.buildMlbBacktest(startDate, endDate, modelId, source);
     send(res, 200, JSON.stringify(backtest), "application/json; charset=utf-8");
     return;
   }
@@ -1755,6 +1760,7 @@ async function serveStatic(req, res) {
 
   let requestedPath = decodeURIComponent(url.pathname);
   if (requestedPath === "/") requestedPath = "/index.html";
+  if (requestedPath === "/mlb.html") requestedPath = "/index.html";
   if (privateStaticPath(requestedPath)) {
     send(res, 404, "Not found");
     return;

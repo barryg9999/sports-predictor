@@ -74,6 +74,20 @@ const mlbModels = [
       { id: "defense", label: "Defense proxy", weight: 0.04 },
     ],
   },
+  {
+    id: "pitchingContext18",
+    sport: "mlb",
+    name: "MLB Pitching Context 18",
+    shortName: "Pitching Context",
+    description: "Pitching-heavy model using HR-normalized starter skill, platoon splits, starter workload, bullpen exposure, offense quality, park context, and neutral fallbacks for unavailable weather, umpire, and framing inputs.",
+    scaleFactor: 2.5,
+    components: [
+      { id: "pitcherContext", label: "Starter xFIP context", weight: 0.30 },
+      { id: "bullpenContext", label: "Bullpen exposure", weight: 0.25 },
+      { id: "offenseContext", label: "Offense quality", weight: 0.20 },
+      { id: "gameContext", label: "Game context", weight: 0.25 },
+    ],
+  },
 ];
 
 const parkRunFactors = {
@@ -648,6 +662,17 @@ function fipFromStat(stat = {}, constant = 3.1) {
   return ((13 * hr + 3 * (bb + hbp) - 2 * k) / ip) + constant;
 }
 
+function xfipProxyFromStat(stat = {}, context = {}) {
+  const outs = statOuts(stat);
+  if (!outs) return null;
+  const ip = outs / 3;
+  const expectedHr = (Number.isFinite(context.leagueHrPerIp) ? context.leagueHrPerIp : 1.1 / 9) * ip;
+  const bb = num(stat.baseOnBalls);
+  const hbp = num(stat.hitByPitch);
+  const k = num(stat.strikeOuts);
+  return ((13 * expectedHr + 3 * (bb + hbp) - 2 * k) / ip) + (context.fipConstant || 3.1);
+}
+
 function pitchingContextFromTeams(teamPitchingSplits = []) {
   const totals = teamPitchingSplits.reduce(
     (sum, split) => {
@@ -663,10 +688,10 @@ function pitchingContextFromTeams(teamPitchingSplits = []) {
     { outs: 0, hr: 0, bb: 0, hbp: 0, k: 0, er: 0 }
   );
   const ip = totals.outs / 3;
-  if (!ip) return { fipConstant: 3.1, averageFip: 4.25 };
+  if (!ip) return { fipConstant: 3.1, averageFip: 4.25, leagueHrPerIp: 1.1 / 9 };
   const leagueEra = (totals.er * 9) / ip;
   const formula = (13 * totals.hr + 3 * (totals.bb + totals.hbp) - 2 * totals.k) / ip;
-  return { fipConstant: leagueEra - formula, averageFip: leagueEra };
+  return { fipConstant: leagueEra - formula, averageFip: leagueEra, leagueHrPerIp: safeDivide(totals.hr, ip, 1.1 / 9) };
 }
 
 function fipConstantFromTeams(teamPitchingSplits = []) {
@@ -692,6 +717,14 @@ function slg(stat = {}) {
 
 function kbbPct(stat = {}) {
   return safeDivide(num(stat.strikeOuts) - num(stat.baseOnBalls), num(stat.battersFaced), null);
+}
+
+function kPct(stat = {}) {
+  return safeDivide(num(stat.strikeOuts), num(stat.battersFaced), 0.20);
+}
+
+function bbPct(stat = {}) {
+  return safeDivide(num(stat.baseOnBalls), num(stat.battersFaced), 0.08);
 }
 
 function defenseEfficiency(stat = {}) {
@@ -756,6 +789,114 @@ function parkFitScore({ parkFactor, lineupWrc, spFip }) {
   return clamp(50 + (runTilt * offenseFit * 10) + (Math.abs(runTilt) * pitchingFit * 5));
 }
 
+function expectedInningsFromPitchCount(pitchCount) {
+  const pitches = Number.isFinite(Number(pitchCount)) ? Number(pitchCount) : 85;
+  return clamp(6 - Math.max(0, pitches - 85) * 0.05, 3, 7);
+}
+
+function starterRestPenalty(daysRest) {
+  if (!Number.isFinite(daysRest)) return 0;
+  if (daysRest <= 3) return (4 - daysRest) * 0.04;
+  if (daysRest >= 8) return 0.02;
+  return 0;
+}
+
+function platoonAdvantageForPitcher(pitcherHand, opponentLineup = {}) {
+  const vsPitcherHand = pitcherHand === "L" ? opponentLineup.wobaVsL : opponentLineup.wobaVsR;
+  const vsOtherHand = pitcherHand === "L" ? opponentLineup.wobaVsR : opponentLineup.wobaVsL;
+  if (!Number.isFinite(vsPitcherHand) || !Number.isFinite(vsOtherHand)) return 0;
+  return clamp((vsOtherHand - vsPitcherHand) / 0.050, -1, 1);
+}
+
+function sharpPitchingContext(side, opponentSide, context) {
+  const workload = side.starterWorkload || {};
+  const pitcherXfip = Number.isFinite(side.spXfip) ? side.spXfip : side.spFip;
+  const pitcherKPct = kPct(side.pitcherStat);
+  const pitcherBBPct = bbPct(side.pitcherStat);
+  const daysRest = Number.isFinite(workload.daysRest) ? workload.daysRest : 5;
+  const pitchCount = Number.isFinite(workload.pitchCountLastStart) ? workload.pitchCountLastStart : 85;
+  const expectedInnings = Number.isFinite(workload.expectedInnings) ? workload.expectedInnings : expectedInningsFromPitchCount(pitchCount);
+  const platoonAdvantage = platoonAdvantageForPitcher(side.pitcherHand, opponentSide?.lineup);
+  const restPenalty = starterRestPenalty(daysRest);
+  const catcherFramingRuns = Number.isFinite(side.catcherFramingRuns) ? side.catcherFramingRuns : 0;
+  const framingBoost = catcherFramingRuns * 0.003;
+  const raw = (1 / pitcherXfip) * 14
+    + (pitcherKPct * 22)
+    - (pitcherBBPct * 18)
+    + (platoonAdvantage * 0.08)
+    - restPenalty
+    + framingBoost;
+
+  return {
+    raw,
+    score: higherScore(raw, 3.5, 11, 50),
+    pitcherXfip,
+    pitcherKPct,
+    pitcherBBPct,
+    daysRest,
+    pitchCount,
+    expectedInnings,
+    platoonAdvantage,
+    restPenalty,
+    catcherFramingRuns,
+    framingBoost,
+    source: side.spXfipFallback
+      ? `xFIP proxy ${pitcherXfip.toFixed(2)} uses league HR-rate normalization fallback.`
+      : `xFIP proxy ${pitcherXfip.toFixed(2)} uses league HR-rate normalization.`,
+  };
+}
+
+function sharpBullpenContext(side, pitcherContext) {
+  const expectedInnings = pitcherContext.expectedInnings;
+  const bullpenExposure = Math.max(0, (7 - expectedInnings) / 7);
+  const era30d = Number.isFinite(side.bullpen.era30d) ? side.bullpen.era30d : side.bullpen.era;
+  const highLeverageEra = Number.isFinite(side.bullpen.highLeverageEra) ? side.bullpen.highLeverageEra : era30d;
+  const appearancesLast3d = Number.isFinite(side.bullpen.appearancesLast3d) ? side.bullpen.appearancesLast3d : 0;
+  const fatiguePenalty = appearancesLast3d * 0.03;
+  const raw = ((0.5 / Math.max(era30d, 0.1)) + (0.5 / Math.max(highLeverageEra, 0.1)))
+    * (1 + bullpenExposure * 0.3)
+    - fatiguePenalty;
+  return {
+    raw,
+    score: higherScore(raw, 0.02, 0.45, 50),
+    era30d,
+    highLeverageEra,
+    appearancesLast3d,
+    expectedInnings,
+    bullpenExposure,
+    fatiguePenalty,
+  };
+}
+
+function sharpOffenseContext(side) {
+  const lineupStrengthModifier = Number.isFinite(side.lineup.strengthModifier) ? side.lineup.strengthModifier : 1;
+  const teamWoba = Number.isFinite(side.teamWoba) ? side.teamWoba : side.lineup.woba;
+  const raw = ((side.pyth * 0.65) + ((teamWoba || 0.320) * 0.35)) * lineupStrengthModifier;
+  return {
+    raw,
+    score: higherScore(raw, 0.25, 0.65, 50),
+    pyth: side.pyth,
+    teamWoba,
+    lineupStrengthModifier,
+  };
+}
+
+function sharpGameContext(side, context) {
+  const parkFactor = context.parkFactor / 100;
+  const windFactor = Number.isFinite(context.windFactor) ? context.windFactor : 0;
+  const umpireZoneFactor = Number.isFinite(context.umpireZoneFactor) ? context.umpireZoneFactor : 0;
+  const homeFieldBoost = side.side === "home" ? 0.055 : 0;
+  const raw = parkFactor + windFactor + umpireZoneFactor + homeFieldBoost;
+  return {
+    raw,
+    score: higherScore(raw, 0.88, 1.20, 50),
+    parkFactor,
+    windFactor,
+    umpireZoneFactor,
+    homeFieldBoost,
+  };
+}
+
 function modelById(modelId) {
   return mlbModels.find((model) => model.id === modelId) || mlbModels[0];
 }
@@ -802,8 +943,28 @@ async function pitcherMap(personIds, season) {
   return new Map((data.people || []).map((person) => [person.id, person]));
 }
 
-async function lineupSplitScore(teamId, pitcherHand, season, leagueWoba) {
-  const sitCode = pitcherHand === "L" ? "vl" : "vr";
+async function starterWorkloadMap(personIds, dateText, season) {
+  const ids = [...new Set(personIds.filter(Boolean))];
+  if (!ids.length) return new Map();
+  const data = await mlbFetch(`/api/v1/people?personIds=${ids.join(",")}&hydrate=stats(group=[pitching],type=[gameLog],season=${season},gameType=R)`);
+  return new Map((data.people || []).map((person) => {
+    const starts = (person.stats?.[0]?.splits || [])
+      .filter((split) => split.date && split.date < dateText)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    const lastStart = starts[0] || null;
+    const pitchCountLastStart = num(lastStart?.stat?.pitchesThrown || lastStart?.stat?.numberOfPitches, 85);
+    const daysRest = lastStart?.date ? Math.max(0, daysBetween(lastStart.date, dateText) - 1) : 5;
+    return [person.id, {
+      lastStartDate: lastStart?.date || null,
+      daysRest,
+      pitchCountLastStart,
+      expectedInnings: expectedInningsFromPitchCount(pitchCountLastStart),
+      inningsLastStart: lastStart?.stat?.inningsPitched || "",
+    }];
+  }));
+}
+
+async function lineupSplitAggregate(teamId, sitCode, season, leagueWoba) {
   const data = await mlbFetch(`/api/v1/stats?stats=statSplits&group=hitting&gameType=R&season=${season}&teamId=${teamId}&playerPool=ALL&sitCodes=${sitCode}`);
   const topNine = (((data.stats || [])[0] || {}).splits || [])
     .filter((split) => num(split.stat?.plateAppearances) > 0)
@@ -826,12 +987,30 @@ async function lineupSplitScore(teamId, pitcherHand, season, leagueWoba) {
   };
 }
 
+async function lineupSplitScore(teamId, pitcherHand, season, leagueWoba) {
+  const activeCode = pitcherHand === "L" ? "vl" : "vr";
+  const [vsLeft, vsRight] = await Promise.all([
+    lineupSplitAggregate(teamId, "vl", season, leagueWoba),
+    lineupSplitAggregate(teamId, "vr", season, leagueWoba),
+  ]);
+  const active = activeCode === "vl" ? vsLeft : vsRight;
+  return {
+    ...active,
+    wobaVsL: vsLeft.woba,
+    wobaVsR: vsRight.woba,
+    wrcPlusVsL: vsLeft.wrcPlus,
+    wrcPlusVsR: vsRight.wrcPlus,
+    strengthModifier: 1,
+  };
+}
+
 async function bullpenSnapshots(teamIds, dateText, fipConstant) {
   const wanted = new Set(teamIds);
   const startDate = addDays(dateText, -15);
+  const startDate30d = addDays(dateText, -30);
   const endDate = addDays(dateText, -1);
   const workloadStartDate = addDays(dateText, -3);
-  const schedule = await mlbFetch(`/api/v1/schedule?sportId=1&gameTypes=R&startDate=${startDate}&endDate=${endDate}`);
+  const schedule = await mlbFetch(`/api/v1/schedule?sportId=1&gameTypes=R&startDate=${startDate30d}&endDate=${endDate}`);
   const gamePks = [];
   (schedule.dates || []).forEach((date) => {
     (date.games || []).forEach((game) => {
@@ -850,8 +1029,12 @@ async function bullpenSnapshots(teamIds, dateText, fipConstant) {
     hitByPitch: 0,
     strikeOuts: 0,
     battersFaced: 0,
+    outs30d: 0,
+    earnedRuns30d: 0,
+    appearances30d: 0,
     recentPitches: 0,
     recentOuts: 0,
+    recentAppearances: 0,
   }]));
   const boxes = await Promise.all(gamePks.map((game) => mlbFetch(`/api/v1/game/${game.gamePk}/boxscore`).then((box) => ({ box, officialDate: game.officialDate })).catch(() => null)));
   boxes.filter(Boolean).forEach(({ box, officialDate }) => {
@@ -865,33 +1048,45 @@ async function bullpenSnapshots(teamIds, dateText, fipConstant) {
         const outs = statOuts(stat);
         if (!outs) return;
         const current = totals.get(teamId);
-        current.outs += outs;
-        current.earnedRuns += num(stat.earnedRuns);
-        current.appearances += 1;
-        current.homeRuns += num(stat.homeRuns);
-        current.baseOnBalls += num(stat.baseOnBalls);
-        current.hitByPitch += num(stat.hitByPitch);
-        current.strikeOuts += num(stat.strikeOuts);
-        current.battersFaced += num(stat.battersFaced);
+        current.outs30d += outs;
+        current.earnedRuns30d += num(stat.earnedRuns);
+        current.appearances30d += 1;
+        if (officialDate >= startDate) {
+          current.outs += outs;
+          current.earnedRuns += num(stat.earnedRuns);
+          current.appearances += 1;
+          current.homeRuns += num(stat.homeRuns);
+          current.baseOnBalls += num(stat.baseOnBalls);
+          current.hitByPitch += num(stat.hitByPitch);
+          current.strikeOuts += num(stat.strikeOuts);
+          current.battersFaced += num(stat.battersFaced);
+        }
         if (officialDate >= workloadStartDate) {
           current.recentPitches += num(stat.pitchesThrown || stat.numberOfPitches);
           current.recentOuts += outs;
+          current.recentAppearances += 1;
         }
       });
     });
   });
   return new Map([...totals.entries()].map(([teamId, stat]) => {
     const era = stat.outs ? (stat.earnedRuns * 27) / stat.outs : 4.25;
+    const era30d = stat.outs30d ? (stat.earnedRuns30d * 27) / stat.outs30d : era;
     const fip = stat.outs ? fipFromStat(stat, fipConstant) : null;
     const bullpenKbb = kbbPct(stat);
     return [teamId, {
       ...stat,
       era,
+      era30d,
+      highLeverageEra: era30d,
       fip,
       kbbPct: bullpenKbb,
       innings: outsToIp(stat.outs),
+      innings30d: outsToIp(stat.outs30d),
       recentInnings: outsToIp(stat.recentOuts),
+      appearancesLast3d: stat.recentAppearances,
       startDate,
+      startDate30d,
       endDate,
       workloadStartDate,
     }];
@@ -947,8 +1142,62 @@ function expandedTenComponents(side, context) {
   ];
 }
 
-function modelComponents(modelId, side, context) {
-  return modelId === "expanded10" ? expandedTenComponents(side, context) : coreFiveComponents(side);
+function pitchingContextComponents(side, context, opponentSide) {
+  const pitcher = sharpPitchingContext(side, opponentSide, context);
+  const bullpen = sharpBullpenContext(side, pitcher);
+  const offense = sharpOffenseContext(side);
+  const gameContext = sharpGameContext(side, context);
+  side.modelSubValues = {
+    expectedInnings: pitcher.expectedInnings,
+    restPenalty: pitcher.restPenalty,
+    bullpenExposure: bullpen.bullpenExposure,
+    windFactor: gameContext.windFactor,
+    umpireZoneFactor: gameContext.umpireZoneFactor,
+  };
+  side.rawModelScore = (pitcher.raw * 0.30) + (bullpen.raw * 0.25) + (offense.raw * 0.20) + (gameContext.raw * 0.25);
+
+  return [
+    component(
+      "pitcherContext",
+      "Starter xFIP context",
+      0.30,
+      side.starterKnown ? pitcher.score : null,
+      side.starterKnown
+        ? `${pitcher.source} K% ${(pitcher.pitcherKPct * 100).toFixed(1)}, BB% ${(pitcher.pitcherBBPct * 100).toFixed(1)}, rest ${pitcher.daysRest}d, last ${pitcher.pitchCount} pitches, platoon ${pitcher.platoonAdvantage.toFixed(2)}, framing ${pitcher.catcherFramingRuns.toFixed(1)}`
+        : "No probable starter",
+      side.starterKnown ? pitcher.pitcherXfip : "TBD"
+    ),
+    component(
+      "bullpenContext",
+      "Bullpen exposure",
+      0.25,
+      bullpen.score,
+      `30-day ERA ${bullpen.era30d.toFixed(2)}, high-leverage proxy ${bullpen.highLeverageEra.toFixed(2)}, expected SP ${bullpen.expectedInnings.toFixed(1)} IP, exposure ${(bullpen.bullpenExposure * 100).toFixed(0)}%, 3-day appearances ${bullpen.appearancesLast3d}`,
+      bullpen.era30d
+    ),
+    component(
+      "offenseContext",
+      "Offense quality",
+      0.20,
+      offense.score,
+      `Pyth W% ${(offense.pyth * 100).toFixed(1)}%, team wOBA ${Number.isFinite(offense.teamWoba) ? offense.teamWoba.toFixed(3) : "n/a"}, lineup strength ${offense.lineupStrengthModifier.toFixed(2)}`,
+      offense.teamWoba
+    ),
+    component(
+      "gameContext",
+      "Game context",
+      0.25,
+      gameContext.score,
+      `Park ${gameContext.parkFactor.toFixed(2)}, wind ${gameContext.windFactor.toFixed(3)} neutral fallback, umpire zone ${gameContext.umpireZoneFactor.toFixed(3)} neutral fallback${side.side === "home" ? ", home +0.055" : ""}`,
+      gameContext.raw
+    ),
+  ];
+}
+
+function modelComponents(modelId, side, context, opponentSide) {
+  if (modelId === "expanded10") return expandedTenComponents(side, context);
+  if (modelId === "pitchingContext18") return pitchingContextComponents(side, context, opponentSide);
+  return coreFiveComponents(side);
 }
 
 async function buildMlbScorecard(dateText, modelId = "core5") {
@@ -969,7 +1218,11 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
   const teamHittingById = new Map(hittingSplits.map((split) => [split.team.id, split]));
   const pitcherIds = games.flatMap((game) => [game.teams?.away?.probablePitcher?.id, game.teams?.home?.probablePitcher?.id]);
   const teamIds = [...new Set(games.flatMap((game) => [game.teams?.away?.team?.id, game.teams?.home?.team?.id]).filter(Boolean))];
-  const [pitchers, bullpens] = await Promise.all([pitcherMap(pitcherIds, season), bullpenSnapshots(teamIds, dateText, fipConstant)]);
+  const [pitchers, bullpens, starterWorkloads] = await Promise.all([
+    pitcherMap(pitcherIds, season),
+    bullpenSnapshots(teamIds, dateText, fipConstant),
+    starterWorkloadMap(pitcherIds, dateText, season),
+  ]);
 
   const rows = await Promise.all(games.map(async (game) => {
     const pitcherHands = {};
@@ -988,7 +1241,9 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
       const pitcherStat = pitcher?.stats?.[0]?.splits?.[0]?.stat || {};
       const pitcherHand = pitcherHands[side];
       const calculatedSpFip = fipFromStat(pitcherStat, fipConstant);
+      const calculatedSpXfip = xfipProxyFromStat(pitcherStat, pitchingContext);
       const spFip = calculatedSpFip ?? pitchingContext.averageFip;
+      const spXfip = calculatedSpXfip ?? pitchingContext.averageFip;
       const spSource = calculatedSpFip === null
         ? (probable ? "League-average fallback: probable starter has no usable season innings." : "No probable starter listed. Winner cannot be projected.")
         : "Calculated from probable starter season pitching line.";
@@ -1015,8 +1270,19 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
         pitcherStat,
         teamPitchingStat: teamPitching,
         spFip,
+        spXfip,
         spSource,
         spFallback: calculatedSpFip === null,
+        spXfipFallback: calculatedSpXfip === null,
+        starterWorkload: starterWorkloads.get(probable?.id) || {
+          lastStartDate: null,
+          daysRest: 5,
+          pitchCountLastStart: 85,
+          expectedInnings: expectedInningsFromPitchCount(85),
+          inningsLastStart: "",
+        },
+        catcherFramingRuns: 0,
+        teamWoba: woba(teamHitting),
         pyth,
         bullpen,
         lineup,
@@ -1028,10 +1294,13 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
     const projectionAvailable = away.starterKnown && home.starterKnown;
     const parkFactor = parkFactorForVenue(game.venue?.name || "");
     [away, home].forEach((side) => {
+      const opponent = side.side === "away" ? home : away;
       side.components = modelComponents(selectedModel.id, side, {
         averageFip: pitchingContext.averageFip,
         parkFactor,
-      });
+        windFactor: 0,
+        umpireZoneFactor: 0,
+      }, opponent);
       side.composite = compositeFromComponents(side.components);
       delete side.pitcherStat;
       delete side.teamPitchingStat;
@@ -1088,8 +1357,9 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
       "Bullpen ERA is calculated from completed games in the prior 15 days, excluding the first pitcher listed for each team in each boxscore.",
       "Projected lineup wRC+ is approximated as top-nine team hitters by plate appearances in the opposing starter's handedness split, scaled from estimated wOBA against league wOBA.",
       selectedModel.id === "expanded10" ? "Expanded 10 uses MLB public-feed proxies for xFIP/SIERA, xwOBA/xSLG, xERA, xwOBA allowed, bullpen availability, and OAA/DRS until richer data sources are added." : "",
+      selectedModel.id === "pitchingContext18" ? "Pitching Context 18 uses an HR-normalized xFIP proxy, batter-handedness split proxy, starter workload from last game log, 30-day bullpen ERA, and neutral fallbacks for weather, umpire-zone, catcher-framing, and confirmed-lineup inputs until those feeds are connected. Scale factor 2.5 is kept as a calibration target for future log-loss backtesting." : "",
     ].filter(Boolean),
-    league: { fipConstant, averageFip: pitchingContext.averageFip, woba: leagueWoba },
+    league: { fipConstant, averageFip: pitchingContext.averageFip, leagueHrPerIp: pitchingContext.leagueHrPerIp, woba: leagueWoba },
     games: rows,
   };
 }
