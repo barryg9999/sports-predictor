@@ -1,4 +1,3 @@
-const fs = require("fs/promises");
 const fsSync = require("fs");
 const path = require("path");
 
@@ -6,14 +5,13 @@ const root = path.join(__dirname, "..");
 loadLocalEnv(path.join(root, ".env.local"));
 const resumeDir = path.join(root, "resume-bases");
 const outputDir = path.join(root, "outputs");
-const dataDir = path.join(root, "data");
-const mlbSnapshotDir = path.join(dataDir, "mlb-prediction-snapshots");
 const port = Number(process.env.PORT || 4173);
 const mlbBaseUrl = "https://statsapi.mlb.com";
 const oddsApiKey = process.env.ODDS_API_KEY || process.env.THE_ODDS_API_KEY || "";
 const oddsApiBaseUrl = (process.env.ODDS_API_BASE_URL || "https://api.theoddsapi.com").replace(/\/+$/, "");
 const BACKTEST_MAX_DAYS = 10;
 const SNAPSHOT_SCHEMA_VERSION = 1;
+const BLOB_SNAPSHOT_PREFIX = "snapshots/mlb/";
 
 const oddsBookmakers = [
   { key: "fanduel", label: "FanDuel", aliases: ["fanduel", "fan duel"] },
@@ -1640,36 +1638,138 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
   };
 }
 
-function snapshotStorePath(dateText, modelId) {
-  return path.join(mlbSnapshotDir, `${dateText}-${modelId}.json`);
+function snapshotBlobPath(dateText) {
+  return `${BLOB_SNAPSHOT_PREFIX}${dateText}.json`;
 }
 
-async function readJsonFile(filePath, fallback) {
+function snapshotBlobDate(pathname) {
+  if (!pathname.startsWith(BLOB_SNAPSHOT_PREFIX) || !pathname.endsWith(".json")) return null;
+  const dateText = pathname.slice(BLOB_SNAPSHOT_PREFIX.length, -5);
+  return validDate(dateText) ? dateText : null;
+}
+
+function emptySnapshotStore(dateText, modelId) {
+  return {
+    version: SNAPSHOT_SCHEMA_VERSION,
+    sport: "mlb",
+    date: dateText,
+    modelId,
+    captures: [],
+  };
+}
+
+function normalizeSnapshotStore(store, dateText, modelId) {
+  if (!store || !Array.isArray(store.captures)) return emptySnapshotStore(dateText, modelId);
+  return {
+    version: store.version || SNAPSHOT_SCHEMA_VERSION,
+    sport: "mlb",
+    date: store.date || dateText,
+    modelId: store.modelId || modelId,
+    updatedAt: store.updatedAt || null,
+    captures: store.captures,
+  };
+}
+
+function normalizeSnapshotDocument(raw, dateText) {
+  const models = {};
+  if (raw?.models && typeof raw.models === "object") {
+    for (const [modelId, store] of Object.entries(raw.models)) {
+      models[modelId] = normalizeSnapshotStore(store, raw.date || dateText, modelId);
+    }
+  } else if (raw?.modelId && Array.isArray(raw.captures)) {
+    models[raw.modelId] = normalizeSnapshotStore(raw, raw.date || dateText, raw.modelId);
+  }
+
+  return {
+    version: raw?.version || SNAPSHOT_SCHEMA_VERSION,
+    sport: "mlb",
+    date: raw?.date || dateText,
+    updatedAt: raw?.updatedAt || null,
+    models,
+  };
+}
+
+function blobToken() {
+  return process.env.BLOB_READ_WRITE_TOKEN || "";
+}
+
+function blobConfigError() {
+  const message = "Vercel Blob is not configured. Add BLOB_READ_WRITE_TOKEN to the Vercel project environment variables and redeploy.";
+  const error = new Error(message);
+  error.statusCode = 503;
+  error.code = "BLOB_NOT_CONFIGURED";
+  error.json = {
+    error: message,
+    code: error.code,
+    requiredEnv: ["BLOB_READ_WRITE_TOKEN"],
+  };
+  return error;
+}
+
+function ensureBlobConfigured() {
+  if (!blobToken()) throw blobConfigError();
+}
+
+async function blobSdk() {
+  ensureBlobConfigured();
+  return import("@vercel/blob");
+}
+
+async function streamToText(stream) {
+  if (!stream) return "";
+  return new Response(stream).text();
+}
+
+async function readSnapshotBlobDocument(dateText) {
+  const { get } = await blobSdk();
+  const pathname = snapshotBlobPath(dateText);
+  let result;
   try {
-    return JSON.parse(await fs.readFile(filePath, "utf8"));
+    result = await get(pathname, { access: "private", token: blobToken() });
   } catch (error) {
-    if (error.code === "ENOENT") return fallback;
+    if (/not.?found/i.test(error.name || error.message || "")) return normalizeSnapshotDocument(null, dateText);
     throw error;
   }
+  if (!result || result.statusCode !== 200 || !result.stream) return normalizeSnapshotDocument(null, dateText);
+  const text = await streamToText(result.stream);
+  return normalizeSnapshotDocument(JSON.parse(text), dateText);
+}
+
+async function writeSnapshotBlobDocument(document) {
+  const { put } = await blobSdk();
+  return put(
+    snapshotBlobPath(document.date),
+    JSON.stringify(document, null, 2),
+    {
+      access: "private",
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      contentType: "application/json",
+      token: blobToken(),
+    }
+  );
+}
+
+async function listSnapshotBlobDocuments() {
+  const { list } = await blobSdk();
+  const documents = [];
+  let cursor;
+  do {
+    const page = await list({ prefix: BLOB_SNAPSHOT_PREFIX, cursor, limit: 1000, token: blobToken() });
+    for (const blob of page.blobs || []) {
+      const dateText = snapshotBlobDate(blob.pathname);
+      if (!dateText) continue;
+      documents.push(await readSnapshotBlobDocument(dateText));
+    }
+    cursor = page.cursor;
+    if (!page.hasMore) break;
+  } while (cursor);
+  return documents;
 }
 
 async function readSnapshotStore(dateText, modelId) {
-  const store = await readJsonFile(snapshotStorePath(dateText, modelId), null);
-  if (!store || !Array.isArray(store.captures)) {
-    return {
-      version: SNAPSHOT_SCHEMA_VERSION,
-      sport: "mlb",
-      date: dateText,
-      modelId,
-      captures: [],
-    };
-  }
-  return store;
-}
-
-async function writeSnapshotStore(store) {
-  await fs.mkdir(mlbSnapshotDir, { recursive: true });
-  await fs.writeFile(snapshotStorePath(store.date, store.modelId), JSON.stringify(store, null, 2));
+  const document = await readSnapshotBlobDocument(dateText);
+  return normalizeSnapshotStore(document.models?.[modelId], dateText, modelId);
 }
 
 function compactSnapshotSide(side) {
@@ -1776,22 +1876,18 @@ function summarizeSnapshotStore(store) {
 }
 
 async function listMlbSnapshotInventory(dateText = null, requestedModel = "all") {
+  ensureBlobConfigured();
   const stores = [];
   if (dateText) {
     for (const model of selectedModels(requestedModel)) {
       stores.push(await readSnapshotStore(dateText, model.id));
     }
   } else {
-    let entries = [];
-    try {
-      entries = await fs.readdir(mlbSnapshotDir, { withFileTypes: true });
-    } catch (error) {
-      if (error.code !== "ENOENT") throw error;
-    }
-    for (const entry of entries) {
-      if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
-      const store = await readJsonFile(path.join(mlbSnapshotDir, entry.name), null);
-      if (store?.sport === "mlb" && Array.isArray(store.captures)) stores.push(store);
+    const documents = await listSnapshotBlobDocuments();
+    for (const document of documents) {
+      for (const model of selectedModels(requestedModel)) {
+        stores.push(normalizeSnapshotStore(document.models?.[model.id], document.date, model.id));
+      }
     }
   }
   return {
@@ -1804,7 +1900,15 @@ async function listMlbSnapshotInventory(dateText = null, requestedModel = "all")
 }
 
 async function saveMlbPredictionSnapshots(dateText, requestedModel = "all") {
+  ensureBlobConfigured();
+  const document = await readSnapshotBlobDocument(dateText);
+  document.version = SNAPSHOT_SCHEMA_VERSION;
+  document.sport = "mlb";
+  document.date = dateText;
+  document.models = document.models || {};
   const summaries = [];
+  let changed = false;
+
   for (const model of selectedModels(requestedModel)) {
     const scorecard = await buildMlbScorecard(dateText, model.id);
     const openGames = scorecard.games.filter((game) => !game.actualResult?.isFinal);
@@ -1823,7 +1927,7 @@ async function saveMlbPredictionSnapshots(dateText, requestedModel = "all") {
       totalGames: scorecard.totalGames,
       games: openGames.map(compactSnapshotGame),
     };
-    const store = await readSnapshotStore(dateText, model.id);
+    const store = normalizeSnapshotStore(document.models?.[model.id], dateText, model.id);
     if (capture.games.length) {
       store.version = SNAPSHOT_SCHEMA_VERSION;
       store.sport = "mlb";
@@ -1831,7 +1935,9 @@ async function saveMlbPredictionSnapshots(dateText, requestedModel = "all") {
       store.modelId = model.id;
       store.updatedAt = capturedAt;
       store.captures.push(capture);
-      await writeSnapshotStore(store);
+      document.models[model.id] = store;
+      document.updatedAt = capturedAt;
+      changed = true;
     }
     const counts = snapshotCaptureCounts(capture);
     summaries.push({
@@ -1844,12 +1950,15 @@ async function saveMlbPredictionSnapshots(dateText, requestedModel = "all") {
       captures: store.captures.length,
     });
   }
+
+  if (changed) await writeSnapshotBlobDocument(document);
+
   return {
     sport: sports[0],
     date: dateText,
     generatedAt: new Date().toISOString(),
     summaries,
-    note: "Snapshots save non-final games only. Backtests count a saved pick only when it was captured before the game's scheduled start time.",
+    note: `Snapshots save non-final games to Vercel Blob at ${snapshotBlobPath(dateText)}. Backtests count a saved pick only when it was captured before the game's scheduled start time.`,
   };
 }
 
@@ -2086,6 +2195,7 @@ async function buildMlbEstimatedBacktest(startDate, endDate, requestedModel = "a
 }
 
 async function buildMlbSnapshotBacktest(startDate, endDate, requestedModel = "all") {
+  ensureBlobConfigured();
   const dates = dateRange(startDate, endDate);
   const resultCache = new Map();
   const summaries = [];
@@ -2099,7 +2209,7 @@ async function buildMlbSnapshotBacktest(startDate, endDate, requestedModel = "al
     dates,
     generatedAt: new Date().toISOString(),
     maxDays: BACKTEST_MAX_DAYS,
-    source: "Saved local snapshots + MLB Stats API final scores",
+    source: "Saved Vercel Blob snapshots + MLB Stats API final scores",
     backtestSource: "snapshots",
     dataWarning: "Backtests count only saved predictions captured before scheduled first pitch. Save snapshots before games start; live or late captures are skipped.",
     summaries,

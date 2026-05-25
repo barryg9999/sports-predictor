@@ -1,32 +1,7 @@
 import lib from "./_lib.cjs";
 import { handleError, httpError, methodAllowed, queryParam } from "./_shared/http.js";
 
-const { listMlbSnapshotInventory, mlbModels, todayIsoDate, validDate } = lib;
-
-function selectedModels(modelId) {
-  return modelId === "all" ? mlbModels : mlbModels.filter((model) => model.id === modelId);
-}
-
-function readOnlySnapshotResponse(date, modelId) {
-  return {
-    sport: { id: "mlb", name: "MLB", enabled: true },
-    date,
-    generatedAt: new Date().toISOString(),
-    summaries: selectedModels(modelId).map((model) => ({
-      model,
-      saved: false,
-      capturedAt: null,
-      totalGames: 0,
-      alreadyFinalGames: 0,
-      games: 0,
-      projectedGames: 0,
-      pregameGames: 0,
-      lateGames: 0,
-      captures: 0,
-    })),
-    note: "This Vercel deployment is read-only. Prediction snapshots require persistent storage, so saving is disabled until a database or blob store is connected.",
-  };
-}
+const { listMlbSnapshotInventory, mlbModels, saveMlbPredictionSnapshots, todayIsoDate, validDate } = lib;
 
 export default async function handler(req, res) {
   try {
@@ -40,7 +15,8 @@ export default async function handler(req, res) {
     if (modelId !== "all" && !mlbModels.some((model) => model.id === modelId)) throw httpError(400, "Unknown MLB model.");
 
     if (req.method === "POST") {
-      res.status(200).json(readOnlySnapshotResponse(date || todayIsoDate(), modelId));
+      const snapshot = await saveMlbPredictionSnapshots(date || todayIsoDate(), modelId);
+      res.status(200).json(snapshot);
       return;
     }
 

@@ -13,6 +13,10 @@ export function queryParam(req, name, fallback = "") {
 
 export function handleError(res, error) {
   const status = Number.isInteger(error.statusCode) ? error.statusCode : 500;
+  if (error.json && typeof error.json === "object") {
+    res.status(status).json(error.json);
+    return;
+  }
   res.status(status).send(status === 500 ? error.message || "Server error" : error.message);
 }
 

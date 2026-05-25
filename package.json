@@ -5,6 +5,9 @@
   "scripts": {
     "build": "echo \"No build needed for Vercel static + API functions\""
   },
+  "dependencies": {
+    "@vercel/blob": "^2.3.3"
+  },
   "type": "module",
   "engines": {
     "node": "22.x"
