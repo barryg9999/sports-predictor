@@ -88,6 +88,19 @@ const mlbModels = [
       { id: "gameContext", label: "Game context", weight: 0.25 },
     ],
   },
+  {
+    id: "starterPqs",
+    sport: "mlb",
+    name: "MLB Starter PQS",
+    shortName: "Starter PQS",
+    description: "Starting-pitcher-only quality report using SIERA-style skill, K-BB%, whiff/contact proxies, recent command form, rest, pitch budget, times-through-order, platoon matchup, and run-environment adjustments.",
+    components: [
+      { id: "baseQuality", label: "Base quality", weight: 0.55 },
+      { id: "recentForm", label: "Recent form", weight: 0.15 },
+      { id: "matchup", label: "Matchup", weight: 0.15 },
+      { id: "projection", label: "PQS projection", weight: 0.15 },
+    ],
+  },
 ];
 
 const parkRunFactors = {
@@ -727,6 +740,42 @@ function bbPct(stat = {}) {
   return safeDivide(num(stat.baseOnBalls), num(stat.battersFaced), 0.08);
 }
 
+function groundBallPct(stat = {}) {
+  const ground = num(stat.groundOuts);
+  const air = num(stat.airOuts || stat.flyOuts);
+  return safeDivide(ground, ground + air, 0.43);
+}
+
+function strikePct(stat = {}) {
+  const explicit = Number(stat.strikePercentage);
+  if (Number.isFinite(explicit)) return explicit;
+  return safeDivide(num(stat.strikes), num(stat.numberOfPitches), 0.63);
+}
+
+function barrelRateProxy(stat = {}) {
+  const hrPerBatter = safeDivide(num(stat.homeRuns), num(stat.battersFaced), 0.030);
+  const slgAllowed = Number(stat.slg);
+  const slgPenalty = Number.isFinite(slgAllowed) ? (slgAllowed - 0.390) * 0.05 : 0;
+  return clamp(0.045 + ((hrPerBatter - 0.030) * 1.6) + slgPenalty, 0.03, 0.12);
+}
+
+function whiffPctProxy(stat = {}) {
+  return clamp(0.105 + ((kPct(stat) - 0.20) * 0.35) + ((strikePct(stat) - 0.63) * 0.08), 0.08, 0.18);
+}
+
+function chasePctProxy(stat = {}) {
+  return clamp(0.300 + ((strikePct(stat) - 0.63) * 0.25) + ((0.08 - bbPct(stat)) * 0.35), 0.25, 0.38);
+}
+
+function sieraProxyFromStat(stat = {}, context = {}) {
+  const xFip = xfipProxyFromStat(stat, context);
+  if (!Number.isFinite(xFip)) return context.averageFip || 4.25;
+  const kbb = kbbPct(stat) ?? 0.12;
+  const groundBall = groundBallPct(stat);
+  const barrel = barrelRateProxy(stat);
+  return clamp(xFip - ((kbb - 0.12) * 2.0) - ((groundBall - 0.43) * 0.7) + ((barrel - 0.07) * 4.0), 2.5, 5.5);
+}
+
 function defenseEfficiency(stat = {}) {
   const homers = num(stat.homeRuns);
   const hitsInPlay = Math.max(0, num(stat.hits) - homers);
@@ -749,6 +798,7 @@ function mergeHittingStats(splits = []) {
       "sacFlies",
       "plateAppearances",
       "totalBases",
+      "strikeOuts",
     ].forEach((key) => {
       sum[key] = (sum[key] || 0) + num(stat[key]);
     });
@@ -792,6 +842,46 @@ function parkFitScore({ parkFactor, lineupWrc, spFip }) {
 function expectedInningsFromPitchCount(pitchCount) {
   const pitches = Number.isFinite(Number(pitchCount)) ? Number(pitchCount) : 85;
   return clamp(6 - Math.max(0, pitches - 85) * 0.05, 3, 7);
+}
+
+function pitcherPitchBudget(pitchCountLastStart) {
+  const pitches = Number.isFinite(Number(pitchCountLastStart)) ? Number(pitchCountLastStart) : 85;
+  return clamp(Math.max(75, 105 - ((pitches - 85) * 0.4)), 75, 115);
+}
+
+function pitcherRestPenalty(daysRest) {
+  if (!Number.isFinite(daysRest)) return 0;
+  if (daysRest <= 1) return 0.25;
+  if (daysRest === 2) return 0.18;
+  if (daysRest === 3) return 0.10;
+  if (daysRest === 4) return 0.02;
+  if (daysRest === 5 || daysRest === 6) return 0;
+  if (daysRest === 7) return 0.02;
+  return 0.05;
+}
+
+function workloadPenaltyFromInnings(seasonInnings) {
+  if (!Number.isFinite(seasonInnings) || seasonInnings < 100) return 0;
+  if (seasonInnings < 140) return 0.02;
+  return 0.05;
+}
+
+function timesThroughOrderExpected(pitchBudget) {
+  return clamp(pitchBudget / (3.85 * 9), 1.5, 3.5);
+}
+
+function timesThroughOrderPenalty(ttoExpected) {
+  let penalty = 0;
+  if (ttoExpected > 1) penalty += Math.min(ttoExpected - 1, 1) * 0.08;
+  if (ttoExpected > 2) penalty += Math.min(ttoExpected - 2, 1) * 0.20;
+  return penalty;
+}
+
+function pitcherConfidenceTier(pqs) {
+  if (pqs >= 7.5) return "ELITE";
+  if (pqs >= 6.0) return "STRONG";
+  if (pqs >= 4.5) return "AVERAGE";
+  return "RISKY";
 }
 
 function starterRestPenalty(daysRest) {
@@ -897,6 +987,106 @@ function sharpGameContext(side, context) {
   };
 }
 
+function pitcherQualityReport(side, opponentSide, context) {
+  const stat = side.pitcherStat || {};
+  const workload = side.starterWorkload || {};
+  const siera = sieraProxyFromStat(stat, context);
+  const pitcherKPct = kPct(stat);
+  const pitcherBBPct = bbPct(stat);
+  const kMinusBbPct = pitcherKPct - pitcherBBPct;
+  const groundBall = groundBallPct(stat);
+  const barrelRateAgainst = barrelRateProxy(stat);
+  const whiffPct = whiffPctProxy(stat);
+  const chasePct = chasePctProxy(stat);
+  const recent = workload.recentProcess || {};
+  const veloTrend = Number.isFinite(recent.veloTrend) ? recent.veloTrend : 0;
+  const whiffPctRecent = Number.isFinite(recent.whiffPctRecent) ? recent.whiffPctRecent : whiffPct;
+  const zonePctRecent = Number.isFinite(recent.zonePctRecent) ? recent.zonePctRecent : 0.46;
+  const daysRest = Number.isFinite(workload.daysRest) ? workload.daysRest : 5;
+  const pitchCountLastStart = Number.isFinite(workload.pitchCountLastStart) ? workload.pitchCountLastStart : 85;
+  const seasonInningsPitched = statOuts(stat) / 3;
+  const pitchBudget = pitcherPitchBudget(pitchCountLastStart);
+  const ttoExpected = timesThroughOrderExpected(pitchBudget);
+  const ttoPenalty = timesThroughOrderPenalty(ttoExpected);
+  const platoonWobaDelta = Number.isFinite(opponentSide?.lineup?.woba) && Number.isFinite(opponentSide?.teamWoba)
+    ? opponentSide.lineup.woba - opponentSide.teamWoba
+    : 0;
+  const opposingKPct = Number.isFinite(opponentSide?.lineup?.kPct) ? opponentSide.lineup.kPct : 0.22;
+  const parkFactorPitching = Number.isFinite(context.parkFactor) ? context.parkFactor / 100 : 1;
+  const umpireZoneFactor = Number.isFinite(context.umpireZoneFactor) ? context.umpireZoneFactor : 0;
+  const windFactor = Number.isFinite(context.windFactor) ? context.windFactor : 0;
+  const baseScore = (1 / siera) * 14
+    + (kMinusBbPct * 25)
+    + (whiffPct * 15)
+    + (chasePct * 8)
+    - (barrelRateAgainst * 30)
+    + (groundBall * 4);
+  const veloAdjustment = veloTrend * 0.04;
+  const whiffTrendRatio = whiffPctRecent / Math.max(whiffPct, 0.01);
+  const whiffAdjustment = (whiffTrendRatio - 1) * 0.10;
+  const zoneAdjustment = (zonePctRecent - 0.46) * 0.08;
+  const recentFormScore = veloAdjustment + whiffAdjustment + zoneAdjustment;
+  const restPenalty = pitcherRestPenalty(daysRest);
+  const workloadPenalty = workloadPenaltyFromInnings(seasonInningsPitched);
+  const matchupScore = -(platoonWobaDelta * 20) + (opposingKPct * 10);
+  const umpireInteraction = umpireZoneFactor * (1 + (pitcherBBPct * 2));
+  const environmentScore = -((parkFactorPitching - 1) * 5) + umpireInteraction - (windFactor * 4);
+  const rawScore = baseScore
+    + (recentFormScore * 0.15)
+    + matchupScore
+    + environmentScore
+    - restPenalty
+    - workloadPenalty
+    - ttoPenalty;
+  const pqs = clamp(rawScore, 0, 10);
+  const expectedIp = clamp(pitchBudget / 16.5, 3, 7.5);
+  const baseEraProjection = siera * (1 + (parkFactorPitching - 1))
+    + (platoonWobaDelta * 5)
+    - (recentFormScore * 0.3)
+    + (ttoPenalty * 0.5);
+  const projectedRuns = Math.max(0, baseEraProjection * (expectedIp / 9));
+
+  return {
+    siera,
+    kMinusBbPct,
+    pitcherKPct,
+    pitcherBBPct,
+    groundBallPct: groundBall,
+    barrelRateAgainst,
+    whiffPct,
+    chasePct,
+    veloTrend,
+    whiffPctRecent,
+    zonePctRecent,
+    daysRest,
+    pitchCountLastStart,
+    seasonInningsPitched,
+    pitchBudget,
+    ttoExpected,
+    platoonWobaDelta,
+    opposingKPct,
+    parkFactorPitching,
+    umpireZoneFactor,
+    windFactor,
+    baseScore,
+    recentFormScore,
+    matchupScore,
+    environmentScore,
+    restPenalty,
+    workloadPenalty,
+    ttoPenalty,
+    rawScore,
+    pqs,
+    expectedIp,
+    projectedRuns,
+    confidenceTier: pitcherConfidenceTier(pqs),
+    sourceNotes: [
+      "SIERA is approximated from xFIP proxy, K-BB%, ground-ball proxy, and contact-quality proxy because direct FanGraphs SIERA is not available in the MLB Stats API.",
+      "Barrel, whiff, chase, velocity trend, zone, umpire, and wind use transparent proxies or neutral fallbacks until Statcast/weather/umpire feeds are connected.",
+    ],
+  };
+}
+
 function modelById(modelId) {
   return mlbModels.find((model) => model.id === modelId) || mlbModels[0];
 }
@@ -949,9 +1139,21 @@ async function starterWorkloadMap(personIds, dateText, season) {
   const data = await mlbFetch(`/api/v1/people?personIds=${ids.join(",")}&hydrate=stats(group=[pitching],type=[gameLog],season=${season},gameType=R)`);
   return new Map((data.people || []).map((person) => {
     const starts = (person.stats?.[0]?.splits || [])
+      .filter((split) => num(split.stat?.gamesStarted) > 0)
       .filter((split) => split.date && split.date < dateText)
       .sort((a, b) => b.date.localeCompare(a.date));
     const lastStart = starts[0] || null;
+    const recentStarts = starts.slice(0, 4);
+    const recentTotals = recentStarts.reduce(
+      (sum, split) => {
+        const stat = split.stat || {};
+        sum.strikes += num(stat.strikes);
+        sum.pitches += num(stat.numberOfPitches);
+        sum.outs += statOuts(stat);
+        return sum;
+      },
+      { strikes: 0, pitches: 0, outs: 0 }
+    );
     const pitchCountLastStart = num(lastStart?.stat?.pitchesThrown || lastStart?.stat?.numberOfPitches, 85);
     const daysRest = lastStart?.date ? Math.max(0, daysBetween(lastStart.date, dateText) - 1) : 5;
     return [person.id, {
@@ -960,6 +1162,14 @@ async function starterWorkloadMap(personIds, dateText, season) {
       pitchCountLastStart,
       expectedInnings: expectedInningsFromPitchCount(pitchCountLastStart),
       inningsLastStart: lastStart?.stat?.inningsPitched || "",
+      recentProcess: {
+        veloTrend: 0,
+        whiffPctRecent: null,
+        zonePctRecent: clamp(safeDivide(recentTotals.strikes, recentTotals.pitches, 0.62) - 0.16, 0.42, 0.55),
+        starts: recentStarts.length,
+        innings: outsToIp(recentTotals.outs),
+        source: "Velocity, whiff, and true zone rate are neutral/proxy fallbacks from the current MLB Stats API feed.",
+      },
     }];
   }));
 }
@@ -977,6 +1187,7 @@ async function lineupSplitAggregate(teamId, sitCode, season, leagueWoba) {
     wrcPlus: estimatedWrc,
     woba: lineupWoba,
     slg: slg(aggregate),
+    kPct: safeDivide(num(aggregate.strikeOuts), num(aggregate.plateAppearances), 0.22),
     plateAppearances: num(aggregate.plateAppearances),
     split: sitCode === "vl" ? "vs LHP" : "vs RHP",
     hitters: topNine.map((split) => ({
@@ -1194,9 +1405,69 @@ function pitchingContextComponents(side, context, opponentSide) {
   ];
 }
 
+function pitcherQualityComponents(side, context, opponentSide) {
+  const report = pitcherQualityReport(side, opponentSide, context);
+  side.pitcherQualityReport = report;
+  side.modelSubValues = {
+    pqs: report.pqs,
+    expectedIp: report.expectedIp,
+    projectedRuns: report.projectedRuns,
+    confidenceTier: report.confidenceTier,
+    pitchBudget: report.pitchBudget,
+    ttoExpected: report.ttoExpected,
+    platoonWobaDelta: report.platoonWobaDelta,
+    restPenalty: report.restPenalty,
+    workloadPenalty: report.workloadPenalty,
+    ttoPenalty: report.ttoPenalty,
+  };
+  return [
+    component(
+      "baseQuality",
+      "Base quality",
+      0.55,
+      side.starterKnown ? clamp(report.baseScore * 10, 0, 100) : null,
+      side.starterKnown
+        ? `SIERA proxy ${report.siera.toFixed(2)}, K-BB% ${(report.kMinusBbPct * 100).toFixed(1)}%, GB% ${(report.groundBallPct * 100).toFixed(1)}%, barrel proxy ${(report.barrelRateAgainst * 100).toFixed(1)}%, whiff proxy ${(report.whiffPct * 100).toFixed(1)}%, chase proxy ${(report.chasePct * 100).toFixed(1)}%`
+        : "No probable starter",
+      report.baseScore
+    ),
+    component(
+      "recentForm",
+      "Recent form",
+      0.15,
+      side.starterKnown ? clamp(50 + (report.recentFormScore * 250), 0, 100) : null,
+      side.starterKnown
+        ? `Velo trend ${report.veloTrend >= 0 ? "+" : ""}${report.veloTrend.toFixed(1)} mph neutral fallback, recent whiff proxy ${(report.whiffPctRecent * 100).toFixed(1)}%, zone proxy ${(report.zonePctRecent * 100).toFixed(1)}%`
+        : "No probable starter",
+      report.recentFormScore
+    ),
+    component(
+      "matchup",
+      "Matchup and environment",
+      0.15,
+      side.starterKnown ? clamp(50 + ((report.matchupScore + report.environmentScore - report.restPenalty - report.workloadPenalty - report.ttoPenalty) * 10), 0, 100) : null,
+      side.starterKnown
+        ? `Platoon delta ${report.platoonWobaDelta >= 0 ? "+" : ""}${report.platoonWobaDelta.toFixed(3)}, opponent K% ${(report.opposingKPct * 100).toFixed(1)}, park ${report.parkFactorPitching.toFixed(2)}, rest penalty ${report.restPenalty.toFixed(2)}, TTO penalty ${report.ttoPenalty.toFixed(2)}`
+        : "No probable starter",
+      report.matchupScore + report.environmentScore
+    ),
+    component(
+      "projection",
+      "PQS projection",
+      0.15,
+      side.starterKnown ? report.pqs * 10 : null,
+      side.starterKnown
+        ? `PQS ${report.pqs.toFixed(2)}/10, ${report.confidenceTier}, expected ${report.expectedIp.toFixed(1)} IP, projected ${report.projectedRuns.toFixed(2)} runs, pitch budget ${Math.round(report.pitchBudget)}, TTO ${report.ttoExpected.toFixed(1)}`
+        : "No probable starter",
+      report.pqs
+    ),
+  ];
+}
+
 function modelComponents(modelId, side, context, opponentSide) {
   if (modelId === "expanded10") return expandedTenComponents(side, context);
   if (modelId === "pitchingContext18") return pitchingContextComponents(side, context, opponentSide);
+  if (modelId === "starterPqs") return pitcherQualityComponents(side, context, opponentSide);
   return coreFiveComponents(side);
 }
 
@@ -1297,11 +1568,15 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
       const opponent = side.side === "away" ? home : away;
       side.components = modelComponents(selectedModel.id, side, {
         averageFip: pitchingContext.averageFip,
+        fipConstant,
+        leagueHrPerIp: pitchingContext.leagueHrPerIp,
         parkFactor,
         windFactor: 0,
         umpireZoneFactor: 0,
       }, opponent);
-      side.composite = compositeFromComponents(side.components);
+      side.composite = selectedModel.id === "starterPqs" && side.pitcherQualityReport
+        ? side.pitcherQualityReport.pqs * 10
+        : compositeFromComponents(side.components);
       delete side.pitcherStat;
       delete side.teamPitchingStat;
     });
@@ -1358,6 +1633,7 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
       "Projected lineup wRC+ is approximated as top-nine team hitters by plate appearances in the opposing starter's handedness split, scaled from estimated wOBA against league wOBA.",
       selectedModel.id === "expanded10" ? "Expanded 10 uses MLB public-feed proxies for xFIP/SIERA, xwOBA/xSLG, xERA, xwOBA allowed, bullpen availability, and OAA/DRS until richer data sources are added." : "",
       selectedModel.id === "pitchingContext18" ? "Pitching Context 18 uses an HR-normalized xFIP proxy, batter-handedness split proxy, starter workload from last game log, 30-day bullpen ERA, and neutral fallbacks for weather, umpire-zone, catcher-framing, and confirmed-lineup inputs until those feeds are connected. Scale factor 2.5 is kept as a calibration target for future log-loss backtesting." : "",
+      selectedModel.id === "starterPqs" ? "Starter PQS is a starting-pitcher-only report. It intentionally excludes bullpen and team offense from the score; SIERA, barrel, whiff, chase, velocity, zone, weather, and umpire values use transparent proxies or neutral fallbacks where the current MLB Stats API does not expose the requested source fields." : "",
     ].filter(Boolean),
     league: { fipConstant, averageFip: pitchingContext.averageFip, leagueHrPerIp: pitchingContext.leagueHrPerIp, woba: leagueWoba },
     games: rows,

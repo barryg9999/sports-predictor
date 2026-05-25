@@ -143,6 +143,17 @@ function scoringComponents(side, projectionAvailable) {
   ];
 }
 
+function modelSubValuesHtml(subValues) {
+  if (!subValues) return "";
+  if (Number.isFinite(subValues.pqs)) {
+    return `<p class="detail-foot">Pitcher report: PQS ${precise.format(subValues.pqs)}/10; tier ${esc(subValues.confidenceTier || "N/A")}; expected ${score(subValues.expectedIp)} IP; projected ${precise.format(subValues.projectedRuns)} runs; pitch budget ${Math.round(subValues.pitchBudget || 0)}; TTO ${score(subValues.ttoExpected)}; platoon delta ${Number.isFinite(subValues.platoonWobaDelta) ? `${subValues.platoonWobaDelta >= 0 ? "+" : ""}${precise.format(subValues.platoonWobaDelta)}` : "N/A"}.</p>`;
+  }
+  if (Number.isFinite(subValues.bullpenExposure)) {
+    return `<p class="detail-foot">Model sub-values: expected SP ${score(subValues.expectedInnings)} IP; rest penalty ${precise.format(subValues.restPenalty)}; bullpen exposure ${pct.format(subValues.bullpenExposure)}; wind ${precise.format(subValues.windFactor)}; umpire zone ${precise.format(subValues.umpireZoneFactor)}.</p>`;
+  }
+  return "";
+}
+
 function renderModelBar(model) {
   const components = model?.components || [];
   modelBar.innerHTML = components
@@ -178,9 +189,7 @@ function sideCard(side, projectionAvailable) {
       </div>
     `)
     .join("");
-  const subValues = side.modelSubValues
-    ? `<p class="detail-foot">Model sub-values: expected SP ${score(side.modelSubValues.expectedInnings)} IP; rest penalty ${precise.format(side.modelSubValues.restPenalty)}; bullpen exposure ${pct.format(side.modelSubValues.bullpenExposure)}; wind ${precise.format(side.modelSubValues.windFactor)}; umpire zone ${precise.format(side.modelSubValues.umpireZoneFactor)}.</p>`
-    : "";
+  const subValues = modelSubValuesHtml(side.modelSubValues);
   return `
     <div class="team-score-card">
       <div class="team-score-head">
