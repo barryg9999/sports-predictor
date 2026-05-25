@@ -42,8 +42,8 @@ const mlbModels = [
   {
     id: "core5",
     sport: "mlb",
-    name: "MLB Core 5",
-    shortName: "Core 5",
+    name: "1 - Core five-factor predictor",
+    shortName: "1 Core 5",
     description: "Original five-factor MLB model.",
     components: [
       { id: "spFip", label: "Starter FIP", weight: 0.30 },
@@ -56,8 +56,8 @@ const mlbModels = [
   {
     id: "expanded10",
     sport: "mlb",
-    name: "MLB Expanded 10",
-    shortName: "Expanded 10",
+    name: "2 - Expanded ten-factor predictor",
+    shortName: "2 Expanded 10",
     description: "Ten-factor MLB model using pitching command, matchup offense, team strength, bullpen workload, bullpen skill, run environment, and defense.",
     components: [
       { id: "spKbb", label: "SP K-BB%", weight: 0.17 },
@@ -75,8 +75,8 @@ const mlbModels = [
   {
     id: "pitchingContext18",
     sport: "mlb",
-    name: "MLB Pitching Context 18",
-    shortName: "Pitching Context",
+    name: "3 - Pitching context predictor",
+    shortName: "3 Pitching Context",
     description: "Pitching-heavy model using HR-normalized starter skill, platoon splits, starter workload, bullpen exposure, offense quality, park context, and neutral fallbacks for unavailable weather, umpire, and framing inputs.",
     scaleFactor: 2.5,
     components: [
@@ -89,14 +89,33 @@ const mlbModels = [
   {
     id: "starterPqs",
     sport: "mlb",
-    name: "MLB Starter PQS",
-    shortName: "Starter PQS",
+    name: "4 - Starter pitcher quality predictor",
+    shortName: "4 Starter PQS",
     description: "Starting-pitcher-only quality report using SIERA-style skill, K-BB%, whiff/contact proxies, recent command form, rest, pitch budget, times-through-order, platoon matchup, and run-environment adjustments.",
     components: [
       { id: "baseQuality", label: "Base quality", weight: 0.55 },
       { id: "recentForm", label: "Recent form", weight: 0.15 },
       { id: "matchup", label: "Matchup", weight: 0.15 },
       { id: "projection", label: "PQS projection", weight: 0.15 },
+    ],
+  },
+  {
+    id: "samfordTop10",
+    sport: "mlb",
+    name: "5 - Samford top-10 win indicators",
+    shortName: "5 Samford Top 10",
+    description: "Two-team rules engine based on the Samford 2022 correlation ranking: run differential, ERA, FIP, strand rate, pitching WAR, WHIP, H/9, batting average against, offensive WAR, and saves.",
+    components: [
+      { id: "RD", label: "1 RD", weight: 10 / 55 },
+      { id: "ERA", label: "2 ERA", weight: 9 / 55 },
+      { id: "FIP", label: "3 FIP", weight: 8 / 55 },
+      { id: "LOB_pct", label: "4 LOB%", weight: 7 / 55 },
+      { id: "pWAR", label: "5 pWAR", weight: 6 / 55 },
+      { id: "WHIP", label: "6 WHIP", weight: 5 / 55 },
+      { id: "H9", label: "7 H/9", weight: 4 / 55 },
+      { id: "BAA", label: "8 BAA", weight: 3 / 55 },
+      { id: "oWAR", label: "9 oWAR", weight: 2 / 55 },
+      { id: "SV", label: "10 SV", weight: 1 / 55 },
     ],
   },
 ];
@@ -826,6 +845,95 @@ function compositeFromComponents(components) {
   return components.reduce((sum, item) => sum + (Number.isFinite(item.score) ? item.score * item.weight : 0), 0);
 }
 
+function statNumber(stat = {}, keys = [], fallback = null) {
+  for (const key of keys) {
+    if (stat[key] === undefined || stat[key] === null || stat[key] === "") continue;
+    const value = num(stat[key], NaN);
+    if (Number.isFinite(value)) return value;
+  }
+  return fallback;
+}
+
+function statPercent(stat = {}, keys = [], fallback = null) {
+  const value = statNumber(stat, keys, fallback);
+  if (!Number.isFinite(value)) return fallback;
+  return value > 1 ? value / 100 : value;
+}
+
+function teamEra(stat = {}) {
+  const explicit = statNumber(stat, ["ERA", "era"], null);
+  if (Number.isFinite(explicit)) return explicit;
+  const ip = statOuts(stat) / 3;
+  return safeDivide(num(stat.earnedRuns) * 9, ip, null);
+}
+
+function teamWhip(stat = {}) {
+  const explicit = statNumber(stat, ["WHIP", "whip"], null);
+  if (Number.isFinite(explicit)) return explicit;
+  const ip = statOuts(stat) / 3;
+  return safeDivide(num(stat.hits) + num(stat.baseOnBalls), ip, null);
+}
+
+function teamHitsPerNine(stat = {}) {
+  const explicit = statNumber(stat, ["H9", "h9", "hitsPer9Inn", "hitsPerNine"], null);
+  if (Number.isFinite(explicit)) return explicit;
+  const ip = statOuts(stat) / 3;
+  return safeDivide(num(stat.hits) * 9, ip, null);
+}
+
+function teamBattingAverageAgainst(stat = {}) {
+  const explicit = statNumber(stat, ["BAA", "baa", "avg", "battingAverageAgainst"], null);
+  if (Number.isFinite(explicit)) return explicit;
+  return safeDivide(num(stat.hits), num(stat.atBats), null);
+}
+
+function teamLeftOnBasePct(stat = {}) {
+  const explicit = statPercent(stat, ["LOB_pct", "LOB%", "lobPct", "leftOnBasePct", "leftOnBasePercentage", "strandRate"], null);
+  if (Number.isFinite(explicit)) return clamp(explicit, 0, 1);
+  const baserunners = num(stat.hits) + num(stat.baseOnBalls) + num(stat.hitByPitch);
+  const denominator = baserunners - (1.4 * num(stat.homeRuns));
+  return clamp(safeDivide(baserunners - num(stat.runs), denominator, 0.72), 0, 1);
+}
+
+function pitchingWarValue(stat = {}, fipConstant = 3.1) {
+  const explicit = statNumber(stat, ["pWAR", "pwar", "pitchingWAR", "pitchingWar", "pitchingWinsAboveReplacement", "winsAboveReplacement"], null);
+  if (Number.isFinite(explicit)) return explicit;
+  const ip = statOuts(stat) / 3;
+  const era = teamEra(stat);
+  const fip = fipFromStat(stat, fipConstant) ?? era;
+  const kbb = num(stat.strikeOuts) - num(stat.baseOnBalls);
+  if (!ip || !Number.isFinite(fip) || !Number.isFinite(era)) return 0;
+  return clamp(((4.8 - fip) * ip / 18) + ((4.7 - era) * ip / 27) + (kbb / 60), -10, 35);
+}
+
+function offensiveWarValue(stat = {}) {
+  const explicit = statNumber(stat, ["oWAR", "owar", "offensiveWAR", "offensiveWar", "offenseWinsAboveReplacement", "winsAboveReplacement"], null);
+  if (Number.isFinite(explicit)) return explicit;
+  const wobaValue = woba(stat) ?? 0.320;
+  const slgValue = slg(stat) ?? statNumber(stat, ["slg"], 0.400);
+  return clamp((num(stat.runs) / 12) + ((wobaValue - 0.320) * 100) + ((slgValue - 0.400) * 30), -10, 40);
+}
+
+function formatSamfordValue(id, value) {
+  if (!Number.isFinite(value)) return "n/a";
+  if (id === "LOB_pct") return `${(value * 100).toFixed(1)}%`;
+  if (id === "BAA") return value.toFixed(3).replace(/^0/, "");
+  if (["ERA", "FIP", "WHIP", "H9"].includes(id)) return value.toFixed(2);
+  if (["pWAR", "oWAR"].includes(id)) return value.toFixed(1);
+  return Math.round(value).toString();
+}
+
+function normalizePairScore(value, otherValue, direction) {
+  if (!Number.isFinite(value) && !Number.isFinite(otherValue)) return 50;
+  if (!Number.isFinite(value)) return 0;
+  if (!Number.isFinite(otherValue)) return 100;
+  if (Math.abs(value - otherValue) < 0.0000001) return 50;
+  const low = Math.min(value, otherValue);
+  const high = Math.max(value, otherValue);
+  const normalized = (value - low) / (high - low);
+  return (direction === "lower" ? 1 - normalized : normalized) * 100;
+}
+
 function parkFactorForVenue(venueName) {
   return parkRunFactors[venueName] || 100;
 }
@@ -1319,6 +1427,139 @@ function coreFiveComponents(side) {
   ];
 }
 
+const samfordTopTenStats = [
+  {
+    id: "RD",
+    label: "1 RD",
+    weightRank: 10,
+    direction: "higher",
+    value: (side) => num(side.teamHittingStat?.runs) - num(side.teamPitchingStat?.runs),
+    source: "Run differential",
+  },
+  {
+    id: "ERA",
+    label: "2 ERA",
+    weightRank: 9,
+    direction: "lower",
+    value: (side) => teamEra(side.teamPitchingStat),
+    source: "Team pitching ERA",
+  },
+  {
+    id: "FIP",
+    label: "3 FIP",
+    weightRank: 8,
+    direction: "lower",
+    value: (side, context) => fipFromStat(side.teamPitchingStat, context.fipConstant),
+    source: "Team FIP",
+  },
+  {
+    id: "LOB_pct",
+    label: "4 LOB%",
+    weightRank: 7,
+    direction: "higher",
+    value: (side) => teamLeftOnBasePct(side.teamPitchingStat),
+    source: "Strand-rate proxy",
+  },
+  {
+    id: "pWAR",
+    label: "5 pWAR",
+    weightRank: 6,
+    direction: "higher",
+    value: (side, context) => pitchingWarValue(side.teamPitchingStat, context.fipConstant),
+    source: "Pitching WAR proxy",
+  },
+  {
+    id: "WHIP",
+    label: "6 WHIP",
+    weightRank: 5,
+    direction: "lower",
+    value: (side) => teamWhip(side.teamPitchingStat),
+    source: "Team WHIP",
+  },
+  {
+    id: "H9",
+    label: "7 H/9",
+    weightRank: 4,
+    direction: "lower",
+    value: (side) => teamHitsPerNine(side.teamPitchingStat),
+    source: "Hits allowed per 9",
+  },
+  {
+    id: "BAA",
+    label: "8 BAA",
+    weightRank: 3,
+    direction: "lower",
+    value: (side) => teamBattingAverageAgainst(side.teamPitchingStat),
+    source: "Batting average against",
+  },
+  {
+    id: "oWAR",
+    label: "9 oWAR",
+    weightRank: 2,
+    direction: "higher",
+    value: (side) => offensiveWarValue(side.teamHittingStat),
+    source: "Offensive WAR proxy",
+  },
+  {
+    id: "SV",
+    label: "10 SV",
+    weightRank: 1,
+    direction: "higher",
+    value: (side) => statNumber(side.teamPitchingStat, ["SV", "sv", "saves"], 0),
+    source: "Team saves",
+  },
+];
+
+function samfordTopTenPairComponents(away, home, context) {
+  const totalWeight = samfordTopTenStats.reduce((sum, item) => sum + item.weightRank, 0);
+  const output = {
+    away: { components: [], statWins: 0 },
+    home: { components: [], statWins: 0 },
+  };
+
+  samfordTopTenStats.forEach((definition) => {
+    const awayValue = definition.value(away, context);
+    const homeValue = definition.value(home, context);
+    const awayScore = normalizePairScore(awayValue, homeValue, definition.direction);
+    const homeScore = normalizePairScore(homeValue, awayValue, definition.direction);
+    const winnerSide = awayScore === homeScore ? "tie" : (awayScore > homeScore ? "away" : "home");
+    if (winnerSide === "away") output.away.statWins += 1;
+    if (winnerSide === "home") output.home.statWins += 1;
+
+    ["away", "home"].forEach((sideKey) => {
+      const sideScore = sideKey === "away" ? awayScore : homeScore;
+      const value = sideKey === "away" ? awayValue : homeValue;
+      const otherValue = sideKey === "away" ? homeValue : awayValue;
+      const advantage = winnerSide === "tie"
+        ? "Tied"
+        : `${winnerSide === sideKey ? "Advantage" : "Behind"} vs ${sideKey === "away" ? home.abbreviation : away.abbreviation}`;
+      const contribution = sideScore * (definition.weightRank / totalWeight);
+      output[sideKey].components.push(component(
+        definition.id,
+        definition.label,
+        definition.weightRank / totalWeight,
+        sideScore,
+        `${advantage}; ${definition.source}: ${formatSamfordValue(definition.id, value)} vs ${formatSamfordValue(definition.id, otherValue)}; weighted contribution ${contribution.toFixed(1)}`,
+        value
+      ));
+    });
+  });
+
+  output.away.composite = compositeFromComponents(output.away.components);
+  output.home.composite = compositeFromComponents(output.home.components);
+  output.away.subValues = {
+    samfordStatWins: output.away.statWins,
+    samfordWeightedScore: output.away.composite,
+    samfordTotalStats: samfordTopTenStats.length,
+  };
+  output.home.subValues = {
+    samfordStatWins: output.home.statWins,
+    samfordWeightedScore: output.home.composite,
+    samfordTotalStats: samfordTopTenStats.length,
+  };
+  return output;
+}
+
 function expandedTenComponents(side, context) {
   const spKbb = kbbPct(side.pitcherStat);
   const spFipScore = lowerScore(side.spFip, 6.5, 2.5, 50);
@@ -1537,6 +1778,7 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
         starterKnown,
         pitcherHand,
         pitcherStat,
+        teamHittingStat: teamHitting,
         teamPitchingStat: teamPitching,
         spFip,
         spXfip,
@@ -1560,24 +1802,38 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
     }));
     const away = sides.find((side) => side.side === "away");
     const home = sides.find((side) => side.side === "home");
-    const projectionAvailable = away.starterKnown && home.starterKnown;
     const parkFactor = parkFactorForVenue(game.venue?.name || "");
+    const sharedContext = {
+      averageFip: pitchingContext.averageFip,
+      fipConstant,
+      leagueHrPerIp: pitchingContext.leagueHrPerIp,
+      parkFactor,
+      windFactor: 0,
+      umpireZoneFactor: 0,
+    };
+    if (selectedModel.id === "samfordTop10") {
+      const samford = samfordTopTenPairComponents(away, home, sharedContext);
+      away.components = samford.away.components;
+      away.composite = samford.away.composite;
+      away.modelSubValues = samford.away.subValues;
+      home.components = samford.home.components;
+      home.composite = samford.home.composite;
+      home.modelSubValues = samford.home.subValues;
+    } else {
+      [away, home].forEach((side) => {
+        const opponent = side.side === "away" ? home : away;
+        side.components = modelComponents(selectedModel.id, side, sharedContext, opponent);
+        side.composite = selectedModel.id === "starterPqs" && side.pitcherQualityReport
+          ? side.pitcherQualityReport.pqs * 10
+          : compositeFromComponents(side.components);
+      });
+    }
     [away, home].forEach((side) => {
-      const opponent = side.side === "away" ? home : away;
-      side.components = modelComponents(selectedModel.id, side, {
-        averageFip: pitchingContext.averageFip,
-        fipConstant,
-        leagueHrPerIp: pitchingContext.leagueHrPerIp,
-        parkFactor,
-        windFactor: 0,
-        umpireZoneFactor: 0,
-      }, opponent);
-      side.composite = selectedModel.id === "starterPqs" && side.pitcherQualityReport
-        ? side.pitcherQualityReport.pqs * 10
-        : compositeFromComponents(side.components);
       delete side.pitcherStat;
+      delete side.teamHittingStat;
       delete side.teamPitchingStat;
     });
+    const projectionAvailable = selectedModel.id === "samfordTop10" ? true : away.starterKnown && home.starterKnown;
     const winner = projectionAvailable ? (away.composite >= home.composite ? away : home) : null;
     const loser = winner?.side === "away" ? home : away;
     const missingStarters = [away, home]
@@ -1624,14 +1880,19 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
     model: selectedModel,
     models: mlbModels,
     notes: [
-      "SP FIP is calculated from public season pitching stats with a season FIP constant derived from all MLB team pitching totals.",
-      "If either team has no probable starter listed, the winner cannot be projected and the game is moved below projected edges.",
-      "If a probable starter has no usable season innings or no probable starter is listed, SP FIP uses current league-average FIP and is labeled in the game detail.",
-      "Bullpen ERA is calculated from completed games in the prior 15 days, excluding the first pitcher listed for each team in each boxscore.",
-      "Projected lineup wRC+ is approximated as top-nine team hitters by plate appearances in the opposing starter's handedness split, scaled from estimated wOBA against league wOBA.",
+      selectedModel.id === "samfordTop10"
+        ? "Team FIP is calculated from public season pitching stats with a season FIP constant derived from all MLB team pitching totals."
+        : "SP FIP is calculated from public season pitching stats with a season FIP constant derived from all MLB team pitching totals.",
+      selectedModel.id === "samfordTop10"
+        ? "This rule set scores team-level season indicators, so it can project games even when probable starters are not listed."
+        : "If either team has no probable starter listed, the winner cannot be projected and the game is moved below projected edges.",
+      selectedModel.id !== "samfordTop10" ? "If a probable starter has no usable season innings or no probable starter is listed, SP FIP uses current league-average FIP and is labeled in the game detail." : "",
+      selectedModel.id !== "samfordTop10" ? "Bullpen ERA is calculated from completed games in the prior 15 days, excluding the first pitcher listed for each team in each boxscore." : "",
+      selectedModel.id !== "samfordTop10" ? "Projected lineup wRC+ is approximated as top-nine team hitters by plate appearances in the opposing starter's handedness split, scaled from estimated wOBA against league wOBA." : "",
       selectedModel.id === "expanded10" ? "Expanded 10 uses MLB public-feed proxies for xFIP/SIERA, xwOBA/xSLG, xERA, xwOBA allowed, bullpen availability, and OAA/DRS until richer data sources are added." : "",
       selectedModel.id === "pitchingContext18" ? "Pitching Context 18 uses an HR-normalized xFIP proxy, batter-handedness split proxy, starter workload from last game log, 30-day bullpen ERA, and neutral fallbacks for weather, umpire-zone, catcher-framing, and confirmed-lineup inputs until those feeds are connected. Scale factor 2.5 is kept as a calibration target for future log-loss backtesting." : "",
       selectedModel.id === "starterPqs" ? "Starter PQS is a starting-pitcher-only report. It intentionally excludes bullpen and team offense from the score; SIERA, barrel, whiff, chase, velocity, zone, weather, and umpire values use transparent proxies or neutral fallbacks where the current MLB Stats API does not expose the requested source fields." : "",
+      selectedModel.id === "samfordTop10" ? "Samford Top 10 compares the two teams directly with min-max normalization. MLB Stats API fields are used where available; pWAR and oWAR use transparent proxies until FanGraphs WAR columns are connected." : "",
     ].filter(Boolean),
     league: { fipConstant, averageFip: pitchingContext.averageFip, leagueHrPerIp: pitchingContext.leagueHrPerIp, woba: leagueWoba },
     games: rows,

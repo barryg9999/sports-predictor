@@ -1,0 +1,199 @@
+#!/usr/bin/env python3
+"""Standalone Samford top-10 MLB win predictor.
+
+The web app also has this logic as its fifth rules engine. This script keeps
+the article-ranked rule set easy to test with a plain dictionary or JSON file.
+"""
+
+import argparse
+import json
+from pathlib import Path
+
+
+WEIGHTS = {
+    "RD": 10,
+    "ERA": 9,
+    "FIP": 8,
+    "LOB_pct": 7,
+    "pWAR": 6,
+    "WHIP": 5,
+    "H9": 4,
+    "BAA": 3,
+    "oWAR": 2,
+    "SV": 1,
+}
+
+LOWER_IS_BETTER = {"ERA", "FIP", "WHIP", "H9", "BAA"}
+
+STAT_LABELS = {
+    "RD": "RD",
+    "ERA": "ERA",
+    "FIP": "FIP",
+    "LOB_pct": "LOB%",
+    "pWAR": "pWAR",
+    "WHIP": "WHIP",
+    "H9": "H/9",
+    "BAA": "BAA",
+    "oWAR": "oWAR",
+    "SV": "SV",
+}
+
+# Aliases make real FanGraphs/CSV-style column names easy to swap in.
+STAT_ALIASES = {
+    "RD": ["RD", "run_differential", "Run Differential"],
+    "ERA": ["ERA"],
+    "FIP": ["FIP"],
+    "LOB_pct": ["LOB_pct", "LOB%", "LOB_pct_", "Left On Base Percentage"],
+    "pWAR": ["pWAR", "pitchingWAR", "Pitching WAR"],
+    "WHIP": ["WHIP"],
+    "H9": ["H9", "H/9", "Hits/9"],
+    "BAA": ["BAA", "AVG", "Batting Average Against"],
+    "oWAR": ["oWAR", "offensiveWAR", "Offensive WAR"],
+    "SV": ["SV", "Saves"],
+}
+
+SAMPLE_TEAMS = {
+    "Team A": {
+        "RD": 87,
+        "ERA": 3.45,
+        "FIP": 3.60,
+        "LOB_pct": 0.762,
+        "pWAR": 22.4,
+        "WHIP": 1.21,
+        "H9": 8.1,
+        "BAA": 0.238,
+        "oWAR": 18.7,
+        "SV": 41,
+    },
+    "Team B": {
+        "RD": 54,
+        "ERA": 3.91,
+        "FIP": 4.05,
+        "LOB_pct": 0.731,
+        "pWAR": 17.1,
+        "WHIP": 1.34,
+        "H9": 8.8,
+        "BAA": 0.251,
+        "oWAR": 20.2,
+        "SV": 33,
+    },
+}
+
+
+def read_stat(stats, stat_key):
+    """Read a stat using the canonical name or a supported data-source alias."""
+    for key in STAT_ALIASES[stat_key]:
+        if key in stats:
+            return float(stats[key])
+    raise KeyError(f"Missing required stat {stat_key}")
+
+
+def normalize_pair(team_value, opponent_value, lower_is_better=False):
+    """Min-max normalize two values, inverting lower-is-better stats."""
+    if team_value == opponent_value:
+        return 0.5
+    low = min(team_value, opponent_value)
+    high = max(team_value, opponent_value)
+    normalized = (team_value - low) / (high - low)
+    return 1.0 - normalized if lower_is_better else normalized
+
+
+def format_value(stat, value):
+    if stat == "LOB_pct":
+        return f"{value * 100:.1f}%"
+    if stat == "BAA":
+        return f"{value:.3f}".lstrip("0")
+    if stat in {"ERA", "FIP", "WHIP", "H9"}:
+        return f"{value:.2f}"
+    if stat in {"pWAR", "oWAR"}:
+        return f"{value:.1f}"
+    return f"{value:.0f}"
+
+
+def score_teams(teams):
+    """Return raw stat rows and final 0-100 composite scores."""
+    names = list(teams)
+    if len(names) != 2:
+        raise ValueError("Input must contain exactly two teams.")
+
+    total_weight = sum(WEIGHTS.values())
+    scores = {name: 0.0 for name in names}
+    rows = []
+
+    for stat, weight in WEIGHTS.items():
+        values = {name: read_stat(teams[name], stat) for name in names}
+        normalized = {
+            name: normalize_pair(values[name], values[names[1 if name == names[0] else 0]], stat in LOWER_IS_BETTER)
+            for name in names
+        }
+
+        for name in names:
+            scores[name] += normalized[name] * weight
+
+        if normalized[names[0]] == normalized[names[1]]:
+            advantage = "Tie"
+        else:
+            advantage = names[0] if normalized[names[0]] > normalized[names[1]] else names[1]
+
+        rows.append({
+            "stat": stat,
+            "values": values,
+            "advantage": advantage,
+            "weight": weight,
+            "contrib": {name: normalized[name] * weight / total_weight * 100 for name in names},
+        })
+
+    final_scores = {name: value / total_weight * 100 for name, value in scores.items()}
+    return names, rows, final_scores
+
+
+def print_report(teams, season=None):
+    names, rows, scores = score_teams(teams)
+    winner = max(scores, key=scores.get)
+    margin = abs(scores[names[0]] - scores[names[1]])
+
+    print("=" * 76)
+    title = "MLB WIN PREDICTOR - STAT COMPARISON"
+    if season:
+        title += f" ({season})"
+    print(title.center(76))
+    print("=" * 76)
+    print(
+        f"{'Stat':<10} | {names[0]:>10} | {names[1]:>10} | "
+        f"{'Advantage':<18} | {'Wt':>2} | {'A Pts':>5} | {'B Pts':>5}"
+    )
+    print("-" * 76)
+    for row in rows:
+        stat = row["stat"]
+        print(
+            f"{STAT_LABELS[stat]:<10} | "
+            f"{format_value(stat, row['values'][names[0]]):>10} | "
+            f"{format_value(stat, row['values'][names[1]]):>10} | "
+            f"{row['advantage']:<18} | "
+            f"{row['weight']:>2} | "
+            f"{row['contrib'][names[0]]:>5.1f} | "
+            f"{row['contrib'][names[1]]:>5.1f}"
+        )
+    print("-" * 76)
+    print(f"COMPOSITE SCORE:  {names[0]}: {scores[names[0]]:.1f}   {names[1]}: {scores[names[1]]:.1f}")
+    print(f"PREDICTED WINNER: {winner} (Confidence margin: {margin:.0f}%)")
+    print("=" * 76)
+
+
+def load_json(path):
+    with Path(path).open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Samford top-10 MLB win predictor.")
+    parser.add_argument("--json", dest="json_path", help="Path to a JSON file containing exactly two teams.")
+    parser.add_argument("--season", help="Optional season label for the output.")
+    args = parser.parse_args()
+
+    teams = load_json(args.json_path) if args.json_path else SAMPLE_TEAMS
+    print_report(teams, season=args.season)
+
+
+if __name__ == "__main__":
+    main()

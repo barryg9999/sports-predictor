@@ -145,6 +145,9 @@ function scoringComponents(side, projectionAvailable) {
 
 function modelSubValuesHtml(subValues) {
   if (!subValues) return "";
+  if (Number.isFinite(subValues.samfordStatWins)) {
+    return `<p class="detail-foot">Samford Top 10: won ${subValues.samfordStatWins} of ${subValues.samfordTotalStats || 10} indicators; weighted score ${score(subValues.samfordWeightedScore)}.</p>`;
+  }
   if (Number.isFinite(subValues.pqs)) {
     return `<p class="detail-foot">Pitcher report: PQS ${precise.format(subValues.pqs)}/10; tier ${esc(subValues.confidenceTier || "N/A")}; expected ${score(subValues.expectedIp)} IP; projected ${precise.format(subValues.projectedRuns)} runs; pitch budget ${Math.round(subValues.pitchBudget || 0)}; TTO ${score(subValues.ttoExpected)}; platoon delta ${Number.isFinite(subValues.platoonWobaDelta) ? `${subValues.platoonWobaDelta >= 0 ? "+" : ""}${precise.format(subValues.platoonWobaDelta)}` : "N/A"}.</p>`;
   }
@@ -152,6 +155,16 @@ function modelSubValuesHtml(subValues) {
     return `<p class="detail-foot">Model sub-values: expected SP ${score(subValues.expectedInnings)} IP; rest penalty ${precise.format(subValues.restPenalty)}; bullpen exposure ${pct.format(subValues.bullpenExposure)}; wind ${precise.format(subValues.windFactor)}; umpire zone ${precise.format(subValues.umpireZoneFactor)}.</p>`;
   }
   return "";
+}
+
+function syncModelSelect(select, models = [], includeAll = false) {
+  const selected = select.value;
+  select.innerHTML = [
+    includeAll ? `<option value="all">All models</option>` : "",
+    ...models.map((model) => `<option value="${esc(model.id)}">${esc(model.name)}</option>`),
+  ].join("");
+  const validSelection = includeAll && selected === "all" || models.some((model) => model.id === selected);
+  select.value = validSelection ? selected : (includeAll ? "all" : models[0].id);
 }
 
 function renderModelBar(model) {
@@ -168,11 +181,9 @@ function renderModelBar(model) {
 
 function syncModelOptions(models = []) {
   if (!models.length) return;
-  const selected = modelSelect.value;
-  modelSelect.innerHTML = models
-    .map((model) => `<option value="${esc(model.id)}">${esc(model.name)}</option>`)
-    .join("");
-  modelSelect.value = models.some((model) => model.id === selected) ? selected : models[0].id;
+  syncModelSelect(modelSelect, models);
+  syncModelSelect(snapshotModel, models, true);
+  syncModelSelect(backtestModel, models, true);
 }
 
 function sideCard(side, projectionAvailable) {
