@@ -10,20 +10,21 @@ import json
 from pathlib import Path
 
 
-WEIGHTS = {
-    "RD": 10,
-    "ERA": 9,
-    "FIP": 8,
-    "LOB_pct": 7,
-    "pWAR": 6,
-    "WHIP": 5,
-    "H9": 4,
-    "BAA": 3,
-    "oWAR": 2,
-    "SV": 1,
-}
+ARTICLE_RANKING = [
+    ("RD", "RD", 10, "higher"),
+    ("ERA", "ERA", 9, "lower"),
+    ("FIP", "FIP", 8, "lower"),
+    ("LOB_pct", "LOB%", 7, "higher"),
+    ("pWAR", "pWAR", 6, "higher"),
+    ("WHIP", "WHIP", 5, "lower"),
+    ("H9", "H/9", 4, "lower"),
+    ("BAA", "BAA", 3, "lower"),
+    ("oWAR", "oWAR", 2, "higher"),
+    ("SV", "SV", 1, "higher"),
+]
 
-LOWER_IS_BETTER = {"ERA", "FIP", "WHIP", "H9", "BAA"}
+WEIGHTS = {stat: weight for stat, _label, weight, _direction in ARTICLE_RANKING}
+LOWER_IS_BETTER = {stat for stat, _label, _weight, direction in ARTICLE_RANKING if direction == "lower"}
 MAX_STAT_EDGE = 15
 
 STAT_SCALES = {
@@ -39,18 +40,7 @@ STAT_SCALES = {
     "SV": 19.4,      # roughly 0.12 saves/game over 162 games
 }
 
-STAT_LABELS = {
-    "RD": "RD",
-    "ERA": "ERA",
-    "FIP": "FIP",
-    "LOB_pct": "LOB%",
-    "pWAR": "pWAR",
-    "WHIP": "WHIP",
-    "H9": "H/9",
-    "BAA": "BAA",
-    "oWAR": "oWAR",
-    "SV": "SV",
-}
+STAT_LABELS = {stat: label for stat, label, _weight, _direction in ARTICLE_RANKING}
 
 # Aliases make real FanGraphs/CSV-style column names easy to swap in.
 STAT_ALIASES = {
@@ -92,6 +82,28 @@ SAMPLE_TEAMS = {
         "SV": 33,
     },
 }
+
+
+def validate_article_alignment():
+    """Keep the standalone rules engine pinned to the Samford article order."""
+    expected = [
+        ("RD", 10, "higher"),
+        ("ERA", 9, "lower"),
+        ("FIP", 8, "lower"),
+        ("LOB_pct", 7, "higher"),
+        ("pWAR", 6, "higher"),
+        ("WHIP", 5, "lower"),
+        ("H9", 4, "lower"),
+        ("BAA", 3, "lower"),
+        ("oWAR", 2, "higher"),
+        ("SV", 1, "higher"),
+    ]
+    actual = [(stat, WEIGHTS[stat], "lower" if stat in LOWER_IS_BETTER else "higher") for stat in WEIGHTS]
+    if actual != expected:
+        raise RuntimeError("Samford article ranking mismatch in standalone predictor.")
+
+
+validate_article_alignment()
 
 
 def read_stat(stats, stat_key):

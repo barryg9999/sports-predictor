@@ -19,6 +19,20 @@ const CALIBRATION_LOOKBACK_DAYS = 30;
 const MIN_CALIBRATION_OVERALL_PICKS = 30;
 const MIN_CALIBRATION_BUCKET_PICKS = 20;
 
+const samfordArticleTopTen = [
+  { id: "RD", label: "1 RD", weightRank: 10, direction: "higher", articleName: "Run differential" },
+  { id: "ERA", label: "2 ERA", weightRank: 9, direction: "lower", articleName: "Earned run average" },
+  { id: "FIP", label: "3 FIP", weightRank: 8, direction: "lower", articleName: "Fielding independent pitching" },
+  { id: "LOB_pct", label: "4 LOB%", weightRank: 7, direction: "higher", articleName: "Left on base percentage" },
+  { id: "pWAR", label: "5 pWAR", weightRank: 6, direction: "higher", articleName: "Pitching WAR" },
+  { id: "WHIP", label: "6 WHIP", weightRank: 5, direction: "lower", articleName: "Walks plus hits per inning pitched" },
+  { id: "H9", label: "7 H/9", weightRank: 4, direction: "lower", articleName: "Hits allowed per 9 innings" },
+  { id: "BAA", label: "8 BAA", weightRank: 3, direction: "lower", articleName: "Batting average against" },
+  { id: "oWAR", label: "9 oWAR", weightRank: 2, direction: "higher", articleName: "Offensive WAR" },
+  { id: "SV", label: "10 SV", weightRank: 1, direction: "higher", articleName: "Saves" },
+];
+const samfordArticleTotalWeight = samfordArticleTopTen.reduce((sum, item) => sum + item.weightRank, 0);
+
 const oddsBookmakers = [
   { key: "fanduel", label: "FanDuel", aliases: ["fanduel", "fan duel"] },
   { key: "draftkings", label: "DraftKings", aliases: ["draftkings", "draft kings"] },
@@ -111,18 +125,11 @@ const mlbModels = [
     name: "5 - Samford top-10 win indicators",
     shortName: "5 Samford Top 10",
     description: "Two-team rules engine based on the Samford 2022 correlation ranking: run differential, ERA, FIP, strand rate, pitching WAR, WHIP, H/9, batting average against, offensive WAR, and saves.",
-    components: [
-      { id: "RD", label: "1 RD", weight: 10 / 55 },
-      { id: "ERA", label: "2 ERA", weight: 9 / 55 },
-      { id: "FIP", label: "3 FIP", weight: 8 / 55 },
-      { id: "LOB_pct", label: "4 LOB%", weight: 7 / 55 },
-      { id: "pWAR", label: "5 pWAR", weight: 6 / 55 },
-      { id: "WHIP", label: "6 WHIP", weight: 5 / 55 },
-      { id: "H9", label: "7 H/9", weight: 4 / 55 },
-      { id: "BAA", label: "8 BAA", weight: 3 / 55 },
-      { id: "oWAR", label: "9 oWAR", weight: 2 / 55 },
-      { id: "SV", label: "10 SV", weight: 1 / 55 },
-    ],
+    components: samfordArticleTopTen.map((item) => ({
+      id: item.id,
+      label: item.label,
+      weight: item.weightRank / samfordArticleTotalWeight,
+    })),
   },
   {
     id: "ensemble",
@@ -1573,96 +1580,94 @@ function coreFiveComponents(side, opponentSide = {}) {
 
 const samfordTopTenStats = [
   {
-    id: "RD",
-    label: "1 RD",
-    weightRank: 10,
+    ...samfordArticleTopTen[0],
     direction: "higher",
     value: (side) => num(side.teamHittingStat?.runs) - num(side.teamPitchingStat?.runs),
     scale: (away, home) => Math.max(35, samfordAverageGames(away, home) * 1.5),
     source: "Run differential",
   },
   {
-    id: "ERA",
-    label: "2 ERA",
-    weightRank: 9,
+    ...samfordArticleTopTen[1],
     direction: "lower",
     value: (side) => teamEra(side.teamPitchingStat),
     scale: 1.4,
     source: "Team pitching ERA",
   },
   {
-    id: "FIP",
-    label: "3 FIP",
-    weightRank: 8,
+    ...samfordArticleTopTen[2],
     direction: "lower",
     value: (side, context) => fipFromStat(side.teamPitchingStat, context.fipConstant),
     scale: 1.2,
     source: "Team FIP",
   },
   {
-    id: "LOB_pct",
-    label: "4 LOB%",
-    weightRank: 7,
+    ...samfordArticleTopTen[3],
     direction: "higher",
     value: (side) => teamLeftOnBasePct(side.teamPitchingStat),
     scale: 0.07,
-    source: "Strand-rate proxy",
+    source: "LOB% / strand rate",
   },
   {
-    id: "pWAR",
-    label: "5 pWAR",
-    weightRank: 6,
+    ...samfordArticleTopTen[4],
     direction: "higher",
     value: (side, context) => pitchingWarValue(side.teamPitchingStat, context.fipConstant),
     scale: (away, home) => Math.max(4, samfordAverageGames(away, home) * 0.11),
-    source: "Pitching WAR proxy",
+    source: "Pitching WAR",
   },
   {
-    id: "WHIP",
-    label: "6 WHIP",
-    weightRank: 5,
+    ...samfordArticleTopTen[5],
     direction: "lower",
     value: (side) => teamWhip(side.teamPitchingStat),
     scale: 0.3,
     source: "Team WHIP",
   },
   {
-    id: "H9",
-    label: "7 H/9",
-    weightRank: 4,
+    ...samfordArticleTopTen[6],
     direction: "lower",
     value: (side) => teamHitsPerNine(side.teamPitchingStat),
     scale: 2,
     source: "Hits allowed per 9",
   },
   {
-    id: "BAA",
-    label: "8 BAA",
-    weightRank: 3,
+    ...samfordArticleTopTen[7],
     direction: "lower",
     value: (side) => teamBattingAverageAgainst(side.teamPitchingStat),
     scale: 0.045,
     source: "Batting average against",
   },
   {
-    id: "oWAR",
-    label: "9 oWAR",
-    weightRank: 2,
+    ...samfordArticleTopTen[8],
     direction: "higher",
     value: (side) => offensiveWarValue(side.teamHittingStat),
     scale: (away, home) => Math.max(4, samfordAverageGames(away, home) * 0.11),
-    source: "Offensive WAR proxy",
+    source: "Offensive WAR",
   },
   {
-    id: "SV",
-    label: "10 SV",
-    weightRank: 1,
+    ...samfordArticleTopTen[9],
     direction: "higher",
     value: (side) => statNumber(side.teamPitchingStat, ["SV", "sv", "saves"], 0),
     scale: (away, home) => Math.max(4, samfordAverageGames(away, home) * 0.12),
     source: "Team saves",
   },
 ];
+
+function validateSamfordArticleAlignment() {
+  const model = mlbModels.find((item) => item.id === "samfordTop10");
+  if (!model) throw new Error("Samford Top 10 model is missing.");
+  samfordArticleTopTen.forEach((expected, index) => {
+    const stat = samfordTopTenStats[index];
+    const component = model.components[index];
+    const expectedWeight = expected.weightRank / samfordArticleTotalWeight;
+    if (!stat || stat.id !== expected.id || stat.label !== expected.label || stat.weightRank !== expected.weightRank || stat.direction !== expected.direction) {
+      throw new Error(`Samford article stat mismatch at rank ${index + 1}: expected ${expected.id}.`);
+    }
+    if (!component || component.id !== expected.id || component.label !== expected.label || Math.abs(component.weight - expectedWeight) > 0.0000001) {
+      throw new Error(`Samford article component mismatch at rank ${index + 1}: expected ${expected.id}.`);
+    }
+  });
+}
+
+validateSamfordArticleAlignment();
 
 function samfordTopTenPairComponents(away, home, context) {
   const totalWeight = samfordTopTenStats.reduce((sum, item) => sum + item.weightRank, 0);
@@ -2180,7 +2185,8 @@ async function buildMlbScorecard(dateText, modelId = "core5", options = {}) {
       selectedModel.id === "expanded10" ? "Expanded 10 uses MLB public-feed proxies for xFIP/SIERA, xwOBA/xSLG, xERA, xwOBA allowed, bullpen availability, and OAA/DRS until richer data sources are added." : "",
       selectedModel.id === "pitchingContext18" ? "Pitching Context 18 uses an HR-normalized xFIP proxy, batter-handedness split proxy, starter workload from last game log, 30-day bullpen ERA, and neutral fallbacks for weather, umpire-zone, catcher-framing, and confirmed-lineup inputs until those feeds are connected. Scale factor 2.5 is kept as a calibration target for future log-loss backtesting." : "",
       selectedModel.id === "starterPqs" ? "Starter PQS is a starting-pitcher-only report. It intentionally excludes bullpen and team offense from the score; SIERA, barrel, whiff, chase, velocity, zone, weather, and umpire values use transparent proxies or neutral fallbacks where the current MLB Stats API does not expose the requested source fields." : "",
-      selectedModel.id === "samfordTop10" ? "Samford Top 10 compares the two teams with calibrated edge scaling around a neutral 50 score. MLB Stats API fields are used where available; pWAR and oWAR use transparent proxies until FanGraphs WAR columns are connected." : "",
+      selectedModel.id === "samfordTop10" ? "Samford Top 10 uses only the article's ranked indicators, in order: RD, ERA, FIP, LOB%, pWAR, WHIP, H/9, BAA, oWAR, and SV. No speed, stolen-base, error, fielding-percentage, pitch-type, or velocity inputs are included." : "",
+      selectedModel.id === "samfordTop10" ? "Full FanGraphs fidelity requires direct pWAR, oWAR, and LOB% fields. MLB Stats API fields are used where available; pWAR/oWAR and LOB% fall back to transparent proxies until exact FanGraphs columns are connected." : "",
       selectedModel.id === "ensemble" ? "The ensemble averages side probabilities from Models 1-5 and requires at least three available model projections for a pick." : "",
       calibration.available ? `Confidence labels use saved pregame snapshots from the prior ${calibration.lookbackDays} days: ${calibration.overall.picks} picks at ${Math.round((calibration.overall.accuracy || 0) * 100)}%.` : calibration.message,
     ].filter(Boolean),
