@@ -24,7 +24,7 @@ WEIGHTS = {
 }
 
 LOWER_IS_BETTER = {"ERA", "FIP", "WHIP", "H9", "BAA"}
-MAX_STAT_EDGE = 18
+MAX_STAT_EDGE = 15
 
 STAT_SCALES = {
     "RD": 243,        # roughly 1.5 runs/game over 162 games

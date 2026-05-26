@@ -12,6 +12,7 @@ const oddsApiBaseUrl = (process.env.ODDS_API_BASE_URL || "https://api.theoddsapi
 const BACKTEST_MAX_DAYS = 10;
 const SNAPSHOT_SCHEMA_VERSION = 1;
 const BLOB_SNAPSHOT_PREFIX = "snapshots/mlb/";
+const SAMFORD_MAX_STAT_EDGE = 15;
 
 const oddsBookmakers = [
   { key: "fanduel", label: "FanDuel", aliases: ["fanduel", "fan duel"] },
@@ -946,7 +947,7 @@ function calibratedPairScore(value, otherValue, definition, away, home) {
   if (!Number.isFinite(value) || !Number.isFinite(otherValue)) return 50;
   if (Math.abs(value - otherValue) < 0.0000001) return 50;
   const signedDiff = definition.direction === "lower" ? otherValue - value : value - otherValue;
-  const edge = clamp((signedDiff / samfordScale(definition, away, home)) * 18, -18, 18);
+  const edge = clamp((signedDiff / samfordScale(definition, away, home)) * SAMFORD_MAX_STAT_EDGE, -SAMFORD_MAX_STAT_EDGE, SAMFORD_MAX_STAT_EDGE);
   return 50 + edge;
 }
 
