@@ -13,6 +13,8 @@ const BACKTEST_MAX_DAYS = 10;
 const SNAPSHOT_SCHEMA_VERSION = 1;
 const BLOB_SNAPSHOT_PREFIX = "snapshots/mlb/";
 const SAMFORD_MAX_STAT_EDGE = 15;
+const PITCHER_PQS_BASELINE = 11.5;
+const PITCHER_PQS_SLOPE = 0.34;
 
 const oddsBookmakers = [
   { key: "fanduel", label: "FanDuel", aliases: ["fanduel", "fan duel"] },
@@ -824,26 +826,21 @@ function mergeHittingStats(splits = []) {
   }, {});
 }
 
-function scoreParts({ spFip, pyth, bullpenEra, lineupWrc, home }) {
-  return {
-    sp: lowerScore(spFip, 6.5, 2.5, 50),
-    pyth: higherScore(pyth, 0.25, 0.75, 50),
-    bullpen: lowerScore(bullpenEra, 7.5, 2.0, 50),
-    wrc: higherScore(lineupWrc, 60, 155, 50),
-    hfa: home ? 100 : 0,
-  };
-}
-
-function composite(parts) {
-  return (parts.sp * 0.30) + (parts.pyth * 0.25) + (parts.bullpen * 0.20) + (parts.wrc * 0.18) + (parts.hfa * 0.07);
-}
-
 function component(id, label, weight, score, detail, value = "") {
   return { id, label, weight, score: Number.isFinite(score) ? score : null, detail, value };
 }
 
 function compositeFromComponents(components) {
   return components.reduce((sum, item) => sum + (Number.isFinite(item.score) ? item.score * item.weight : 0), 0);
+}
+
+function edgeScore(value, otherValue, direction = "higher", scale = 1, maxEdge = 15) {
+  if (!Number.isFinite(value) && !Number.isFinite(otherValue)) return 50;
+  if (!Number.isFinite(value) || !Number.isFinite(otherValue)) return 50;
+  if (Math.abs(value - otherValue) < 0.0000001) return 50;
+  const signedDiff = direction === "lower" ? otherValue - value : value - otherValue;
+  const edge = clamp((signedDiff / Math.max(scale, 0.0001)) * maxEdge, -maxEdge, maxEdge);
+  return 50 + edge;
 }
 
 function statNumber(stat = {}, keys = [], fallback = null) {
@@ -943,12 +940,7 @@ function samfordScale(definition, away, home) {
 }
 
 function calibratedPairScore(value, otherValue, definition, away, home) {
-  if (!Number.isFinite(value) && !Number.isFinite(otherValue)) return 50;
-  if (!Number.isFinite(value) || !Number.isFinite(otherValue)) return 50;
-  if (Math.abs(value - otherValue) < 0.0000001) return 50;
-  const signedDiff = definition.direction === "lower" ? otherValue - value : value - otherValue;
-  const edge = clamp((signedDiff / samfordScale(definition, away, home)) * SAMFORD_MAX_STAT_EDGE, -SAMFORD_MAX_STAT_EDGE, SAMFORD_MAX_STAT_EDGE);
-  return 50 + edge;
+  return edgeScore(value, otherValue, definition.direction, samfordScale(definition, away, home), SAMFORD_MAX_STAT_EDGE);
 }
 
 function parkFactorForVenue(venueName) {
@@ -1005,6 +997,24 @@ function pitcherConfidenceTier(pqs) {
   if (pqs >= 6.0) return "STRONG";
   if (pqs >= 4.5) return "AVERAGE";
   return "RISKY";
+}
+
+function pitcherQualityScoreFromRaw(rawScore) {
+  return clamp(5 + ((rawScore - PITCHER_PQS_BASELINE) * PITCHER_PQS_SLOPE), 0, 10);
+}
+
+function pitcherBaseQualityComponentScore(baseScore) {
+  return clamp(50 + ((baseScore - 11) * 5.5), 0, 100);
+}
+
+function pitcherMatchupEnvironmentComponentScore(report) {
+  const neutralOpponentKScore = 0.22 * 10;
+  const netContext = (report.matchupScore - neutralOpponentKScore)
+    + report.environmentScore
+    - report.restPenalty
+    - report.workloadPenalty
+    - report.ttoPenalty;
+  return clamp(50 + (netContext * 8), 0, 100);
 }
 
 function starterRestPenalty(daysRest) {
@@ -1161,7 +1171,7 @@ function pitcherQualityReport(side, opponentSide, context) {
     - restPenalty
     - workloadPenalty
     - ttoPenalty;
-  const pqs = clamp(rawScore, 0, 10);
+  const pqs = pitcherQualityScoreFromRaw(rawScore);
   const expectedIp = clamp(pitchBudget / 16.5, 3, 7.5);
   const baseEraProjection = siera * (1 + (parkFactorPitching - 1))
     + (platoonWobaDelta * 5)
@@ -1427,20 +1437,21 @@ async function bullpenSnapshots(teamIds, dateText, fipConstant) {
   }));
 }
 
-function coreFiveComponents(side) {
-  const parts = scoreParts({
-    spFip: side.spFip,
-    pyth: side.pyth,
-    bullpenEra: side.bullpen.era,
-    lineupWrc: side.lineup.wrcPlus,
-    home: side.side === "home",
-  });
+function coreFiveComponents(side, opponentSide = {}) {
+  const opponentLabel = opponentSide.abbreviation || "opponent";
+  const spScore = side.starterKnown && opponentSide.starterKnown
+    ? edgeScore(side.spFip, opponentSide.spFip, "lower", 1.5, 16)
+    : null;
+  const pythScore = edgeScore(side.pyth, opponentSide.pyth, "higher", 0.20, 16);
+  const bullpenScore = edgeScore(side.bullpen.era, opponentSide.bullpen?.era, "lower", 2.5, 12);
+  const lineupScore = edgeScore(side.lineup.wrcPlus, opponentSide.lineup?.wrcPlus, "higher", 35, 10);
+  const homeFieldScore = edgeScore(side.side === "home" ? 1 : 0, opponentSide.side === "home" ? 1 : 0, "higher", 1, 8);
   return [
-    component("spFip", "Starter FIP", 0.30, side.starterKnown ? parts.sp : null, side.starterKnown ? `FIP ${side.spFip.toFixed(2)}${side.spFallback ? " fallback" : ""}` : "No probable starter", side.starterKnown ? side.spFip : "TBD"),
-    component("pyth", "Pythagorean W%", 0.25, parts.pyth, `Pyth W% ${(side.pyth * 100).toFixed(1)}%`, side.pyth),
-    component("bullpenEra", "Bullpen 15-day ERA", 0.20, parts.bullpen, `15-day ERA ${side.bullpen.era.toFixed(2)}`, side.bullpen.era),
-    component("lineupWrc", "Lineup wRC+", 0.18, parts.wrc, `${side.lineup.wrcPlus.toFixed(1)} ${side.lineup.split}`, side.lineup.wrcPlus),
-    component("homeField", "Home field", 0.07, parts.hfa, side.side === "home" ? "Home" : "Away", parts.hfa),
+    component("spFip", "Starter FIP", 0.30, spScore, side.starterKnown ? `FIP ${side.spFip.toFixed(2)} vs ${opponentLabel} ${Number.isFinite(opponentSide.spFip) ? opponentSide.spFip.toFixed(2) : "n/a"}${side.spFallback ? " fallback" : ""}` : "No probable starter", side.starterKnown ? side.spFip : "TBD"),
+    component("pyth", "Pythagorean W%", 0.25, pythScore, `Pyth W% ${(side.pyth * 100).toFixed(1)} vs ${opponentLabel} ${Number.isFinite(opponentSide.pyth) ? (opponentSide.pyth * 100).toFixed(1) : "n/a"}%`, side.pyth),
+    component("bullpenEra", "Bullpen 15-day ERA", 0.20, bullpenScore, `15-day ERA ${side.bullpen.era.toFixed(2)} vs ${opponentLabel} ${Number.isFinite(opponentSide.bullpen?.era) ? opponentSide.bullpen.era.toFixed(2) : "n/a"}`, side.bullpen.era),
+    component("lineupWrc", "Lineup wRC+", 0.18, lineupScore, `${side.lineup.wrcPlus.toFixed(1)} ${side.lineup.split} vs ${opponentLabel} ${Number.isFinite(opponentSide.lineup?.wrcPlus) ? opponentSide.lineup.wrcPlus.toFixed(1) : "n/a"}`, side.lineup.wrcPlus),
+    component("homeField", "Home field", 0.07, homeFieldScore, side.side === "home" ? "Home" : "Away", side.side === "home" ? 1 : 0),
   ];
 }
 
@@ -1588,35 +1599,60 @@ function samfordTopTenPairComponents(away, home, context) {
   return output;
 }
 
-function expandedTenComponents(side, context) {
+function expandedTenInputs(side, context) {
   const spKbb = kbbPct(side.pitcherStat);
-  const spFipScore = lowerScore(side.spFip, 6.5, 2.5, 50);
-  const lineupWrcScore = higherScore(side.lineup.wrcPlus, 60, 155, 50);
-  const pythScore = higherScore(side.pyth, 0.25, 0.75, 50);
-  const availabilityScore = lowerScore(side.bullpen.recentPitches, 180, 0, 70);
-  const bullpenFipScore = lowerScore(side.bullpen.fip, 6.0, 2.5, 50);
-  const bullpenKbbScore = higherScore(side.bullpen.kbbPct, 0.02, 0.24, 50);
-  const lineupWobaScore = higherScore(side.lineup.woba, 0.280, 0.380, 50);
-  const lineupSlgScore = higherScore(side.lineup.slg, 0.340, 0.520, 50);
   const spAllowedWoba = woba(side.pitcherStat);
   const spEra = num(side.pitcherStat.era, context.averageFip);
-  const spAllowedWobaScore = lowerScore(spAllowedWoba, 0.410, 0.260, 50);
-  const spEraScore = lowerScore(spEra, 6.5, 2.0, 50);
   const defenseEff = defenseEfficiency(side.teamPitchingStat);
-  const defenseScore = higherScore(defenseEff, 0.650, 0.730, 50);
   const parkScore = parkFitScore({ parkFactor: context.parkFactor, lineupWrc: side.lineup.wrcPlus, spFip: side.spFip });
+  return {
+    spKbb,
+    spFip: side.spFip,
+    lineupWrc: side.lineup.wrcPlus,
+    pyth: side.pyth,
+    recentPitches: side.bullpen.recentPitches,
+    bullpenFip: side.bullpen.fip,
+    bullpenKbb: side.bullpen.kbbPct,
+    lineupWoba: side.lineup.woba,
+    lineupSlg: side.lineup.slg,
+    spAllowedWoba,
+    spEra,
+    defenseEff,
+    parkScore,
+  };
+}
+
+function expandedTenComponents(side, context, opponentSide = {}) {
+  const current = expandedTenInputs(side, context);
+  const opponent = expandedTenInputs(opponentSide, context);
+  const opponentLabel = opponentSide.abbreviation || "opponent";
+  const starterPairKnown = side.starterKnown && opponentSide.starterKnown;
+  const bullpenSkillScore = averageScores(
+    edgeScore(current.bullpenFip, opponent.bullpenFip, "lower", 1.2, 12),
+    edgeScore(current.bullpenKbb, opponent.bullpenKbb, "higher", 0.12, 12)
+  );
+  const lineupQualityScore = averageScores(
+    edgeScore(current.lineupWoba, opponent.lineupWoba, "higher", 0.055, 10),
+    edgeScore(current.lineupSlg, opponent.lineupSlg, "higher", 0.100, 10)
+  );
+  const spContactScore = starterPairKnown
+    ? averageScores(
+      edgeScore(current.spAllowedWoba, opponent.spAllowedWoba, "lower", 0.080, 10),
+      edgeScore(current.spEra, opponent.spEra, "lower", 1.50, 10)
+    )
+    : null;
 
   return [
-    component("spKbb", "SP K-BB%", 0.17, side.starterKnown ? higherScore(spKbb, 0.02, 0.30, 50) : null, side.starterKnown ? (Number.isFinite(spKbb) ? `K-BB% ${(spKbb * 100).toFixed(1)}%` : "K-BB% league fallback") : "No probable starter", spKbb),
-    component("spFip", "SP FIP", 0.15, side.starterKnown ? spFipScore : null, side.starterKnown ? `FIP ${side.spFip.toFixed(2)}${side.spFallback ? " fallback" : ""}` : "No probable starter", side.spFip),
-    component("lineupWrc", "Lineup wRC+", 0.14, lineupWrcScore, `${side.lineup.wrcPlus.toFixed(1)} ${side.lineup.split}`, side.lineup.wrcPlus),
-    component("pyth", "Pythagorean W%", 0.12, pythScore, `Pyth W% ${(side.pyth * 100).toFixed(1)}%`, side.pyth),
-    component("bullpenAvailability", "Bullpen availability", 0.10, availabilityScore, `3-day relief workload: ${side.bullpen.recentPitches} pitches, ${side.bullpen.recentInnings} IP`, side.bullpen.recentPitches),
-    component("bullpenSkill", "Bullpen skill", 0.09, averageScores(bullpenFipScore, bullpenKbbScore), `15-day FIP ${Number.isFinite(side.bullpen.fip) ? side.bullpen.fip.toFixed(2) : "n/a"}, K-BB% ${Number.isFinite(side.bullpen.kbbPct) ? (side.bullpen.kbbPct * 100).toFixed(1) : "n/a"}%`, side.bullpen.fip),
-    component("lineupQuality", "Lineup quality", 0.08, averageScores(lineupWobaScore, lineupSlgScore), `Proxy: wOBA ${Number.isFinite(side.lineup.woba) ? side.lineup.woba.toFixed(3) : "n/a"}, SLG ${Number.isFinite(side.lineup.slg) ? side.lineup.slg.toFixed(3) : "n/a"}`, side.lineup.woba),
-    component("spContact", "SP contact allowed", 0.06, side.starterKnown ? averageScores(spAllowedWobaScore, spEraScore) : null, side.starterKnown ? `Proxy: allowed wOBA ${Number.isFinite(spAllowedWoba) ? spAllowedWoba.toFixed(3) : "n/a"}, ERA ${Number.isFinite(spEra) ? spEra.toFixed(2) : "n/a"}` : "No probable starter", spAllowedWoba),
-    component("park", "Park fit", 0.05, parkScore, `Run factor ${context.parkFactor}`, context.parkFactor),
-    component("defense", "Defense proxy", 0.04, defenseScore, `DER proxy ${Number.isFinite(defenseEff) ? defenseEff.toFixed(3) : "n/a"}`, defenseEff),
+    component("spKbb", "SP K-BB%", 0.17, starterPairKnown ? edgeScore(current.spKbb, opponent.spKbb, "higher", 0.12, 16) : null, side.starterKnown ? (Number.isFinite(current.spKbb) ? `K-BB% ${(current.spKbb * 100).toFixed(1)}% vs ${opponentLabel} ${Number.isFinite(opponent.spKbb) ? (opponent.spKbb * 100).toFixed(1) : "n/a"}%` : "K-BB% league fallback") : "No probable starter", current.spKbb),
+    component("spFip", "SP FIP", 0.15, starterPairKnown ? edgeScore(current.spFip, opponent.spFip, "lower", 1.4, 16) : null, side.starterKnown ? `FIP ${side.spFip.toFixed(2)} vs ${opponentLabel} ${Number.isFinite(opponent.spFip) ? opponent.spFip.toFixed(2) : "n/a"}${side.spFallback ? " fallback" : ""}` : "No probable starter", side.spFip),
+    component("lineupWrc", "Lineup wRC+", 0.14, edgeScore(current.lineupWrc, opponent.lineupWrc, "higher", 35, 12), `${side.lineup.wrcPlus.toFixed(1)} ${side.lineup.split} vs ${opponentLabel} ${Number.isFinite(opponent.lineupWrc) ? opponent.lineupWrc.toFixed(1) : "n/a"}`, side.lineup.wrcPlus),
+    component("pyth", "Pythagorean W%", 0.12, edgeScore(current.pyth, opponent.pyth, "higher", 0.20, 14), `Pyth W% ${(side.pyth * 100).toFixed(1)} vs ${opponentLabel} ${Number.isFinite(opponent.pyth) ? (opponent.pyth * 100).toFixed(1) : "n/a"}%`, side.pyth),
+    component("bullpenAvailability", "Bullpen availability", 0.10, edgeScore(current.recentPitches, opponent.recentPitches, "lower", 120, 10), `3-day relief workload: ${side.bullpen.recentPitches} pitches vs ${opponentLabel} ${Number.isFinite(opponent.recentPitches) ? opponent.recentPitches : "n/a"}, ${side.bullpen.recentInnings} IP`, side.bullpen.recentPitches),
+    component("bullpenSkill", "Bullpen skill", 0.09, bullpenSkillScore, `15-day FIP ${Number.isFinite(side.bullpen.fip) ? side.bullpen.fip.toFixed(2) : "n/a"}, K-BB% ${Number.isFinite(side.bullpen.kbbPct) ? (side.bullpen.kbbPct * 100).toFixed(1) : "n/a"}%`, side.bullpen.fip),
+    component("lineupQuality", "Lineup quality", 0.08, lineupQualityScore, `Proxy: wOBA ${Number.isFinite(side.lineup.woba) ? side.lineup.woba.toFixed(3) : "n/a"}, SLG ${Number.isFinite(side.lineup.slg) ? side.lineup.slg.toFixed(3) : "n/a"}`, side.lineup.woba),
+    component("spContact", "SP contact allowed", 0.06, spContactScore, side.starterKnown ? `Proxy: allowed wOBA ${Number.isFinite(current.spAllowedWoba) ? current.spAllowedWoba.toFixed(3) : "n/a"}, ERA ${Number.isFinite(current.spEra) ? current.spEra.toFixed(2) : "n/a"}` : "No probable starter", current.spAllowedWoba),
+    component("park", "Park fit", 0.05, edgeScore(current.parkScore, opponent.parkScore, "higher", 15, 6), `Run factor ${context.parkFactor}`, context.parkFactor),
+    component("defense", "Defense proxy", 0.04, edgeScore(current.defenseEff, opponent.defenseEff, "higher", 0.04, 8), `DER proxy ${Number.isFinite(current.defenseEff) ? current.defenseEff.toFixed(3) : "n/a"}`, current.defenseEff),
   ];
 }
 
@@ -1625,6 +1661,12 @@ function pitchingContextComponents(side, context, opponentSide) {
   const bullpen = sharpBullpenContext(side, pitcher);
   const offense = sharpOffenseContext(side);
   const gameContext = sharpGameContext(side, context);
+  const opponentPitcher = sharpPitchingContext(opponentSide, side, context);
+  const opponentBullpen = sharpBullpenContext(opponentSide, opponentPitcher);
+  const opponentOffense = sharpOffenseContext(opponentSide);
+  const opponentGameContext = sharpGameContext(opponentSide, context);
+  const opponentLabel = opponentSide.abbreviation || "opponent";
+  const starterPairKnown = side.starterKnown && opponentSide.starterKnown;
   side.modelSubValues = {
     expectedInnings: pitcher.expectedInnings,
     restPenalty: pitcher.restPenalty,
@@ -1639,9 +1681,9 @@ function pitchingContextComponents(side, context, opponentSide) {
       "pitcherContext",
       "Starter xFIP context",
       0.30,
-      side.starterKnown ? pitcher.score : null,
+      starterPairKnown ? edgeScore(pitcher.raw, opponentPitcher.raw, "higher", 3.0, 18) : null,
       side.starterKnown
-        ? `${pitcher.source} K% ${(pitcher.pitcherKPct * 100).toFixed(1)}, BB% ${(pitcher.pitcherBBPct * 100).toFixed(1)}, rest ${pitcher.daysRest}d, last ${pitcher.pitchCount} pitches, platoon ${pitcher.platoonAdvantage.toFixed(2)}, framing ${pitcher.catcherFramingRuns.toFixed(1)}`
+        ? `${pitcher.source} Raw ${pitcher.raw.toFixed(3)} vs ${opponentLabel} ${Number.isFinite(opponentPitcher.raw) ? opponentPitcher.raw.toFixed(3) : "n/a"}; K% ${(pitcher.pitcherKPct * 100).toFixed(1)}, BB% ${(pitcher.pitcherBBPct * 100).toFixed(1)}, rest ${pitcher.daysRest}d, last ${pitcher.pitchCount} pitches, platoon ${pitcher.platoonAdvantage.toFixed(2)}, framing ${pitcher.catcherFramingRuns.toFixed(1)}`
         : "No probable starter",
       side.starterKnown ? pitcher.pitcherXfip : "TBD"
     ),
@@ -1649,24 +1691,24 @@ function pitchingContextComponents(side, context, opponentSide) {
       "bullpenContext",
       "Bullpen exposure",
       0.25,
-      bullpen.score,
-      `30-day ERA ${bullpen.era30d.toFixed(2)}, high-leverage proxy ${bullpen.highLeverageEra.toFixed(2)}, expected SP ${bullpen.expectedInnings.toFixed(1)} IP, exposure ${(bullpen.bullpenExposure * 100).toFixed(0)}%, 3-day appearances ${bullpen.appearancesLast3d}`,
+      edgeScore(bullpen.raw, opponentBullpen.raw, "higher", 0.6, 14),
+      `Raw ${bullpen.raw.toFixed(3)} vs ${opponentLabel} ${Number.isFinite(opponentBullpen.raw) ? opponentBullpen.raw.toFixed(3) : "n/a"}; 30-day ERA ${bullpen.era30d.toFixed(2)}, high-leverage proxy ${bullpen.highLeverageEra.toFixed(2)}, expected SP ${bullpen.expectedInnings.toFixed(1)} IP, exposure ${(bullpen.bullpenExposure * 100).toFixed(0)}%, 3-day appearances ${bullpen.appearancesLast3d}`,
       bullpen.era30d
     ),
     component(
       "offenseContext",
       "Offense quality",
       0.20,
-      offense.score,
-      `Pyth W% ${(offense.pyth * 100).toFixed(1)}%, team wOBA ${Number.isFinite(offense.teamWoba) ? offense.teamWoba.toFixed(3) : "n/a"}, lineup strength ${offense.lineupStrengthModifier.toFixed(2)}`,
+      edgeScore(offense.raw, opponentOffense.raw, "higher", 0.20, 12),
+      `Raw ${offense.raw.toFixed(3)} vs ${opponentLabel} ${Number.isFinite(opponentOffense.raw) ? opponentOffense.raw.toFixed(3) : "n/a"}; Pyth W% ${(offense.pyth * 100).toFixed(1)}%, team wOBA ${Number.isFinite(offense.teamWoba) ? offense.teamWoba.toFixed(3) : "n/a"}, lineup strength ${offense.lineupStrengthModifier.toFixed(2)}`,
       offense.teamWoba
     ),
     component(
       "gameContext",
       "Game context",
       0.25,
-      gameContext.score,
-      `Park ${gameContext.parkFactor.toFixed(2)}, wind ${gameContext.windFactor.toFixed(3)} neutral fallback, umpire zone ${gameContext.umpireZoneFactor.toFixed(3)} neutral fallback${side.side === "home" ? ", home +0.055" : ""}`,
+      edgeScore(gameContext.raw, opponentGameContext.raw, "higher", 0.11, 6),
+      `Raw ${gameContext.raw.toFixed(3)} vs ${opponentLabel} ${Number.isFinite(opponentGameContext.raw) ? opponentGameContext.raw.toFixed(3) : "n/a"}; park ${gameContext.parkFactor.toFixed(2)}, wind ${gameContext.windFactor.toFixed(3)} neutral fallback, umpire zone ${gameContext.umpireZoneFactor.toFixed(3)} neutral fallback${side.side === "home" ? ", home +0.055" : ""}`,
       gameContext.raw
     ),
   ];
@@ -1692,7 +1734,7 @@ function pitcherQualityComponents(side, context, opponentSide) {
       "baseQuality",
       "Base quality",
       0.55,
-      side.starterKnown ? clamp(report.baseScore * 10, 0, 100) : null,
+      side.starterKnown ? pitcherBaseQualityComponentScore(report.baseScore) : null,
       side.starterKnown
         ? `SIERA proxy ${report.siera.toFixed(2)}, K-BB% ${(report.kMinusBbPct * 100).toFixed(1)}%, GB% ${(report.groundBallPct * 100).toFixed(1)}%, barrel proxy ${(report.barrelRateAgainst * 100).toFixed(1)}%, whiff proxy ${(report.whiffPct * 100).toFixed(1)}%, chase proxy ${(report.chasePct * 100).toFixed(1)}%`
         : "No probable starter",
@@ -1712,7 +1754,7 @@ function pitcherQualityComponents(side, context, opponentSide) {
       "matchup",
       "Matchup and environment",
       0.15,
-      side.starterKnown ? clamp(50 + ((report.matchupScore + report.environmentScore - report.restPenalty - report.workloadPenalty - report.ttoPenalty) * 10), 0, 100) : null,
+      side.starterKnown ? pitcherMatchupEnvironmentComponentScore(report) : null,
       side.starterKnown
         ? `Platoon delta ${report.platoonWobaDelta >= 0 ? "+" : ""}${report.platoonWobaDelta.toFixed(3)}, opponent K% ${(report.opposingKPct * 100).toFixed(1)}, park ${report.parkFactorPitching.toFixed(2)}, rest penalty ${report.restPenalty.toFixed(2)}, TTO penalty ${report.ttoPenalty.toFixed(2)}`
         : "No probable starter",
@@ -1732,10 +1774,10 @@ function pitcherQualityComponents(side, context, opponentSide) {
 }
 
 function modelComponents(modelId, side, context, opponentSide) {
-  if (modelId === "expanded10") return expandedTenComponents(side, context);
+  if (modelId === "expanded10") return expandedTenComponents(side, context, opponentSide);
   if (modelId === "pitchingContext18") return pitchingContextComponents(side, context, opponentSide);
   if (modelId === "starterPqs") return pitcherQualityComponents(side, context, opponentSide);
-  return coreFiveComponents(side);
+  return coreFiveComponents(side, opponentSide);
 }
 
 async function buildMlbScorecard(dateText, modelId = "core5") {
@@ -1790,13 +1832,6 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
       const pyth = pythagoreanWinPct(num(teamHitting.runs), num(teamPitching.runs));
       const bullpen = bullpens.get(team.id) || { era: 4.25, innings: "0.0", appearances: 0 };
       const lineup = await lineupSplitScore(team.id, pitcherHands[opponentSide] === "L" ? "L" : "R", season, leagueWoba);
-      const parts = scoreParts({
-        spFip,
-        pyth,
-        bullpenEra: bullpen.era,
-        lineupWrc: lineup.wrcPlus,
-        home: side === "home",
-      });
       return {
         side,
         teamId: team.id,
@@ -1825,7 +1860,6 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
         pyth,
         bullpen,
         lineup,
-        parts,
       };
     }));
     const away = sides.find((side) => side.side === "away");
