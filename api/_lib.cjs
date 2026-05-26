@@ -15,6 +15,9 @@ const BLOB_SNAPSHOT_PREFIX = "snapshots/mlb/";
 const SAMFORD_MAX_STAT_EDGE = 15;
 const PITCHER_PQS_BASELINE = 11.5;
 const PITCHER_PQS_SLOPE = 0.34;
+const CALIBRATION_LOOKBACK_DAYS = 30;
+const MIN_CALIBRATION_OVERALL_PICKS = 30;
+const MIN_CALIBRATION_BUCKET_PICKS = 20;
 
 const oddsBookmakers = [
   { key: "fanduel", label: "FanDuel", aliases: ["fanduel", "fan duel"] },
@@ -121,7 +124,23 @@ const mlbModels = [
       { id: "SV", label: "10 SV", weight: 1 / 55 },
     ],
   },
+  {
+    id: "ensemble",
+    sport: "mlb",
+    name: "6 - Consensus calibrated ensemble",
+    shortName: "6 Ensemble",
+    description: "Consensus model that averages the side probabilities from Models 1-5 and uses saved pregame backtests before assigning confidence.",
+    components: [
+      { id: "core5", label: "1 Core 5", weight: 0.20 },
+      { id: "expanded10", label: "2 Expanded 10", weight: 0.20 },
+      { id: "pitchingContext18", label: "3 Pitching Context", weight: 0.20 },
+      { id: "starterPqs", label: "4 Starter PQS", weight: 0.20 },
+      { id: "samfordTop10", label: "5 Samford Top 10", weight: 0.20 },
+    ],
+  },
 ];
+
+const ensembleModelIds = ["core5", "expanded10", "pitchingContext18", "starterPqs", "samfordTop10"];
 
 const parkRunFactors = {
   "Coors Field": 115,
@@ -327,8 +346,96 @@ function edgeBucket(margin) {
   return "tight";
 }
 
+function edgeBucketLabel(bucket) {
+  if (bucket === "strong") return "Strong: margin 12+";
+  if (bucket === "solid") return "Solid: margin 7-11.9";
+  if (bucket === "lean") return "Lean: margin 3-6.9";
+  if (bucket === "tight") return "Tight: margin under 3";
+  return "Unavailable";
+}
+
+function emptyCalibrationProfile(modelId, message = "No saved pregame calibration sample is available yet.") {
+  return {
+    available: false,
+    modelId,
+    lookbackDays: CALIBRATION_LOOKBACK_DAYS,
+    source: "none",
+    message,
+    overall: { picks: 0, correct: 0, incorrect: 0, accuracy: null },
+    buckets: {},
+  };
+}
+
+function confidenceRatingFromAccuracy(accuracy, picks, bucket = "unavailable", sampleFloor = MIN_CALIBRATION_BUCKET_PICKS) {
+  if (!Number.isFinite(accuracy) || picks < sampleFloor) {
+    return {
+      bucket,
+      label: "Unproven",
+      className: "unproven",
+      action: "Track only",
+      reason: `Need ${sampleFloor}+ saved pregame picks in this bucket before trusting it.`,
+    };
+  }
+  if (accuracy >= 0.62) {
+    return { bucket, label: "Strong", className: "strong", action: "Playable", reason: "Saved pregame history has cleared the strong accuracy bar." };
+  }
+  if (accuracy >= 0.56) {
+    return { bucket, label: "Solid", className: "solid", action: "Playable", reason: "Saved pregame history has been meaningfully above break-even." };
+  }
+  if (accuracy >= 0.52) {
+    return { bucket, label: "Lean", className: "lean", action: "Small edge", reason: "Saved pregame history is above break-even but not strong." };
+  }
+  return { bucket, label: "No edge", className: "no-edge", action: "Pass", reason: "Saved pregame history has not beaten a coin-flip baseline." };
+}
+
+function confidenceForGame(game, calibration = null) {
+  const bucket = edgeBucket(game.margin);
+  if (!game.projectionAvailable || bucket === "unavailable") {
+    return {
+      bucket,
+      label: "No projection",
+      className: "unavailable",
+      sampleSize: 0,
+      accuracy: null,
+      calibrated: false,
+      reason: game.projectionNote || "Projection unavailable.",
+    };
+  }
+  if (!calibration?.available) {
+    return {
+      bucket,
+      label: "Uncalibrated",
+      className: "unproven",
+      sampleSize: 0,
+      accuracy: null,
+      calibrated: false,
+      reason: calibration?.message || "Save pregame snapshots and run backtests before trusting confidence labels.",
+    };
+  }
+  if ((calibration.overall?.picks || 0) < MIN_CALIBRATION_OVERALL_PICKS) {
+    return {
+      bucket,
+      label: "Unproven",
+      className: "unproven",
+      sampleSize: calibration.overall?.picks || 0,
+      accuracy: calibration.overall?.accuracy ?? null,
+      calibrated: false,
+      reason: `Only ${calibration.overall?.picks || 0} saved pregame picks in the ${CALIBRATION_LOOKBACK_DAYS}-day sample; need ${MIN_CALIBRATION_OVERALL_PICKS}+ before assigning confidence.`,
+    };
+  }
+  const bucketStats = calibration.buckets?.[bucket] || emptyBacktestBucket(edgeBucketLabel(bucket));
+  const rating = confidenceRatingFromAccuracy(bucketStats.accuracy, bucketStats.picks, bucket);
+  return {
+    ...rating,
+    sampleSize: bucketStats.picks,
+    accuracy: bucketStats.accuracy,
+    calibrated: rating.className !== "unproven",
+    reason: `${rating.reason} Bucket sample: ${bucketStats.picks} picks at ${Number.isFinite(bucketStats.accuracy) ? `${Math.round(bucketStats.accuracy * 100)}%` : "n/a"}.`,
+  };
+}
+
 function emptyBacktestBucket(label) {
-  return { label, picks: 0, correct: 0, incorrect: 0, accuracy: null };
+  return { label, picks: 0, correct: 0, incorrect: 0, accuracy: null, rating: confidenceRatingFromAccuracy(null, 0) };
 }
 
 function updateBacktestBucket(bucket, correct) {
@@ -336,6 +443,7 @@ function updateBacktestBucket(bucket, correct) {
   if (correct) bucket.correct += 1;
   else bucket.incorrect += 1;
   bucket.accuracy = bucket.picks ? bucket.correct / bucket.picks : null;
+  bucket.rating = confidenceRatingFromAccuracy(bucket.accuracy, bucket.picks, "bucket", 3);
 }
 
 function statOuts(stat = {}) {
@@ -399,6 +507,11 @@ function modelSideProbabilities(game) {
   const diff = game.home.composite - game.away.composite;
   const home = 1 / (1 + Math.exp(-diff / 18));
   return { home, away: 1 - home };
+}
+
+function probabilityEdgeScore(probability) {
+  if (!Number.isFinite(probability)) return 50;
+  return clamp(50 + ((probability - 0.5) * 60), 20, 80);
 }
 
 function sideForOutcomeName(outcomeName, game) {
@@ -667,10 +780,13 @@ async function buildMlbOddsComparison(dateText, modelId = "core5") {
     provider: "The Odds API",
     books: oddsBookmakers,
     model: scorecard.model,
+    calibration: scorecard.calibration,
     requestsRemaining: oddsResult.requestsRemaining,
     notes: [
       "Moneyline probabilities are no-vig averages from FanDuel and DraftKings when both sides are available.",
-      "Model probabilities are score-implied estimates from the app's composite margin, not a fully calibrated win-probability model yet.",
+      scorecard.calibration?.available
+        ? "Model probabilities are score-implied from composite margin; confidence labels are separately gated by saved pregame backtests."
+        : "Model probabilities are score-implied estimates from composite margin. Treat them as uncalibrated until saved pregame backtests prove the bucket.",
       "MLB full-game moneyline is normally two-way; a tie appears only if a book returns a 3-way/tie market. Run lines and totals can push on whole-number lines.",
     ],
     games,
@@ -1780,7 +1896,110 @@ function modelComponents(modelId, side, context, opponentSide) {
   return coreFiveComponents(side, opponentSide);
 }
 
-async function buildMlbScorecard(dateText, modelId = "core5") {
+function cloneModelSide(side) {
+  return {
+    ...side,
+    bullpen: { ...(side.bullpen || {}) },
+    lineup: { ...(side.lineup || {}) },
+    starterWorkload: { ...(side.starterWorkload || {}) },
+    components: [],
+    modelSubValues: null,
+    pitcherQualityReport: null,
+    rawModelScore: null,
+    composite: null,
+  };
+}
+
+function scoreSingleModelPair(model, awaySource, homeSource, context) {
+  const away = cloneModelSide(awaySource);
+  const home = cloneModelSide(homeSource);
+  if (model.id === "samfordTop10") {
+    const samford = samfordTopTenPairComponents(away, home, context);
+    away.components = samford.away.components;
+    away.composite = samford.away.composite;
+    away.modelSubValues = samford.away.subValues;
+    home.components = samford.home.components;
+    home.composite = samford.home.composite;
+    home.modelSubValues = samford.home.subValues;
+  } else {
+    [away, home].forEach((side) => {
+      const opponent = side.side === "away" ? home : away;
+      side.components = modelComponents(model.id, side, context, opponent);
+      side.composite = model.id === "starterPqs" && side.pitcherQualityReport
+        ? side.pitcherQualityReport.pqs * 10
+        : compositeFromComponents(side.components);
+    });
+  }
+  const projectionAvailable = model.id === "samfordTop10" ? true : away.starterKnown && home.starterKnown;
+  const winnerSide = projectionAvailable ? (away.composite >= home.composite ? "away" : "home") : null;
+  const winner = winnerSide === "away" ? away : (winnerSide === "home" ? home : null);
+  const loser = winnerSide === "away" ? home : (winnerSide === "home" ? away : null);
+  const margin = projectionAvailable ? Math.abs(winner.composite - loser.composite) : null;
+  return { model, away, home, projectionAvailable, winner, loser, margin };
+}
+
+function buildEnsemblePair(awaySource, homeSource, context) {
+  const baseResults = ensembleModelIds
+    .map((id) => scoreSingleModelPair(modelById(id), awaySource, homeSource, context))
+    .filter((result) => result.projectionAvailable);
+  const away = cloneModelSide(awaySource);
+  const home = cloneModelSide(homeSource);
+  const projectionAvailable = baseResults.length >= 3;
+  if (!projectionAvailable) {
+    away.components = [];
+    home.components = [];
+    away.composite = null;
+    home.composite = null;
+    return { model: modelById("ensemble"), away, home, projectionAvailable, winner: null, loser: null, margin: null, baseResults };
+  }
+  const modelWeight = 1 / baseResults.length;
+  const probabilities = baseResults.map((result) => {
+    const modelProbabilities = modelSideProbabilities(result);
+    const pick = result.winner?.side || null;
+    return {
+      model: result.model,
+      pick,
+      margin: result.margin,
+      away: modelProbabilities.away,
+      home: modelProbabilities.home,
+    };
+  });
+  const awayProbability = probabilities.reduce((sum, item) => sum + (Number.isFinite(item.away) ? item.away : 0.5), 0) / probabilities.length;
+  const homeProbability = probabilities.reduce((sum, item) => sum + (Number.isFinite(item.home) ? item.home : 0.5), 0) / probabilities.length;
+  away.composite = probabilityEdgeScore(awayProbability);
+  home.composite = probabilityEdgeScore(homeProbability);
+  away.components = probabilities.map((item) => component(
+    item.model.id,
+    item.model.shortName || item.model.name,
+    modelWeight,
+    probabilityEdgeScore(item.away),
+    `${item.model.shortName || item.model.name}: ${item.pick === "away" ? "picked" : "faded"} ${away.abbreviation}; model margin ${Number.isFinite(item.margin) ? item.margin.toFixed(1) : "n/a"}`,
+    item.away
+  ));
+  home.components = probabilities.map((item) => component(
+    item.model.id,
+    item.model.shortName || item.model.name,
+    modelWeight,
+    probabilityEdgeScore(item.home),
+    `${item.model.shortName || item.model.name}: ${item.pick === "home" ? "picked" : "faded"} ${home.abbreviation}; model margin ${Number.isFinite(item.margin) ? item.margin.toFixed(1) : "n/a"}`,
+    item.home
+  ));
+  const winnerSide = away.composite >= home.composite ? "away" : "home";
+  const winner = winnerSide === "away" ? away : home;
+  const loser = winnerSide === "away" ? home : away;
+  const margin = Math.abs(winner.composite - loser.composite);
+  const modelVotes = probabilities.reduce((votes, item) => {
+    if (item.pick === "away") votes.away += 1;
+    if (item.pick === "home") votes.home += 1;
+    return votes;
+  }, { away: 0, home: 0 });
+  away.modelSubValues = { ensembleProbability: awayProbability, modelVotes: modelVotes.away, modelCount: probabilities.length };
+  home.modelSubValues = { ensembleProbability: homeProbability, modelVotes: modelVotes.home, modelCount: probabilities.length };
+  return { model: modelById("ensemble"), away, home, projectionAvailable, winner, loser, margin, baseResults };
+}
+
+async function buildMlbScorecard(dateText, modelId = "core5", options = {}) {
+  const includeCalibration = options.includeCalibration !== false;
   const selectedModel = modelById(modelId);
   const schedule = await mlbFetch(`/api/v1/schedule?sportId=1&gameTypes=R&date=${dateText}&hydrate=probablePitcher,team`);
   const games = (schedule.dates || []).flatMap((date) => date.games || []);
@@ -1873,30 +2092,30 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
       windFactor: 0,
       umpireZoneFactor: 0,
     };
-    if (selectedModel.id === "samfordTop10") {
-      const samford = samfordTopTenPairComponents(away, home, sharedContext);
-      away.components = samford.away.components;
-      away.composite = samford.away.composite;
-      away.modelSubValues = samford.away.subValues;
-      home.components = samford.home.components;
-      home.composite = samford.home.composite;
-      home.modelSubValues = samford.home.subValues;
-    } else {
-      [away, home].forEach((side) => {
-        const opponent = side.side === "away" ? home : away;
-        side.components = modelComponents(selectedModel.id, side, sharedContext, opponent);
-        side.composite = selectedModel.id === "starterPqs" && side.pitcherQualityReport
-          ? side.pitcherQualityReport.pqs * 10
-          : compositeFromComponents(side.components);
-      });
-    }
+    const modelResult = selectedModel.id === "ensemble"
+      ? buildEnsemblePair(away, home, sharedContext)
+      : scoreSingleModelPair(selectedModel, away, home, sharedContext);
+    Object.assign(away, {
+      components: modelResult.away.components,
+      composite: modelResult.away.composite,
+      modelSubValues: modelResult.away.modelSubValues,
+      rawModelScore: modelResult.away.rawModelScore,
+      pitcherQualityReport: modelResult.away.pitcherQualityReport,
+    });
+    Object.assign(home, {
+      components: modelResult.home.components,
+      composite: modelResult.home.composite,
+      modelSubValues: modelResult.home.modelSubValues,
+      rawModelScore: modelResult.home.rawModelScore,
+      pitcherQualityReport: modelResult.home.pitcherQualityReport,
+    });
     [away, home].forEach((side) => {
       delete side.pitcherStat;
       delete side.teamHittingStat;
       delete side.teamPitchingStat;
     });
-    const projectionAvailable = selectedModel.id === "samfordTop10" ? true : away.starterKnown && home.starterKnown;
-    const winner = projectionAvailable ? (away.composite >= home.composite ? away : home) : null;
+    const projectionAvailable = modelResult.projectionAvailable;
+    const winner = projectionAvailable ? (modelResult.winner.side === "away" ? away : home) : null;
     const loser = winner?.side === "away" ? home : away;
     const missingStarters = [away, home]
       .filter((side) => !side.starterKnown)
@@ -1931,6 +2150,12 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
     if (a.projectionAvailable !== b.projectionAvailable) return a.projectionAvailable ? -1 : 1;
     return (b.margin || 0) - (a.margin || 0);
   });
+  const calibration = includeCalibration
+    ? await buildMlbCalibrationProfile(dateText, selectedModel.id)
+    : emptyCalibrationProfile(selectedModel.id, "Calibration was skipped for this internal scoring run.");
+  rows.forEach((game) => {
+    game.confidence = confidenceForGame(game, calibration);
+  });
   return {
     date: dateText,
     season,
@@ -1941,6 +2166,7 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
     sports,
     model: selectedModel,
     models: mlbModels,
+    calibration,
     notes: [
       selectedModel.id === "samfordTop10"
         ? "Team FIP is calculated from public season pitching stats with a season FIP constant derived from all MLB team pitching totals."
@@ -1955,6 +2181,8 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
       selectedModel.id === "pitchingContext18" ? "Pitching Context 18 uses an HR-normalized xFIP proxy, batter-handedness split proxy, starter workload from last game log, 30-day bullpen ERA, and neutral fallbacks for weather, umpire-zone, catcher-framing, and confirmed-lineup inputs until those feeds are connected. Scale factor 2.5 is kept as a calibration target for future log-loss backtesting." : "",
       selectedModel.id === "starterPqs" ? "Starter PQS is a starting-pitcher-only report. It intentionally excludes bullpen and team offense from the score; SIERA, barrel, whiff, chase, velocity, zone, weather, and umpire values use transparent proxies or neutral fallbacks where the current MLB Stats API does not expose the requested source fields." : "",
       selectedModel.id === "samfordTop10" ? "Samford Top 10 compares the two teams with calibrated edge scaling around a neutral 50 score. MLB Stats API fields are used where available; pWAR and oWAR use transparent proxies until FanGraphs WAR columns are connected." : "",
+      selectedModel.id === "ensemble" ? "The ensemble averages side probabilities from Models 1-5 and requires at least three available model projections for a pick." : "",
+      calibration.available ? `Confidence labels use saved pregame snapshots from the prior ${calibration.lookbackDays} days: ${calibration.overall.picks} picks at ${Math.round((calibration.overall.accuracy || 0) * 100)}%.` : calibration.message,
     ].filter(Boolean),
     league: { fipConstant, averageFip: pitchingContext.averageFip, leagueHrPerIp: pitchingContext.leagueHrPerIp, woba: leagueWoba },
     games: rows,
@@ -2147,6 +2375,7 @@ function compactSnapshotGame(game) {
     } : null,
     margin,
     bucket: edgeBucket(margin),
+    confidence: game.confidence || null,
   };
 }
 
@@ -2233,7 +2462,7 @@ async function saveMlbPredictionSnapshots(dateText, requestedModel = "all") {
   let changed = false;
 
   for (const model of selectedModels(requestedModel)) {
-    const scorecard = await buildMlbScorecard(dateText, model.id);
+    const scorecard = await buildMlbScorecard(dateText, model.id, { includeCalibration: false });
     const openGames = scorecard.games.filter((game) => !game.actualResult?.isFinal);
     const capturedAt = new Date().toISOString();
     const capture = {
@@ -2352,10 +2581,10 @@ function backtestThresholdSummary(records, threshold) {
 
 function emptyBacktestBuckets() {
   return {
-    tight: emptyBacktestBucket("Tight: margin under 3"),
-    lean: emptyBacktestBucket("Lean: margin 3-6.9"),
-    solid: emptyBacktestBucket("Solid: margin 7-11.9"),
-    strong: emptyBacktestBucket("Strong: margin 12+"),
+    tight: emptyBacktestBucket(edgeBucketLabel("tight")),
+    lean: emptyBacktestBucket(edgeBucketLabel("lean")),
+    solid: emptyBacktestBucket(edgeBucketLabel("solid")),
+    strong: emptyBacktestBucket(edgeBucketLabel("strong")),
   };
 }
 
@@ -2490,6 +2719,52 @@ async function summarizeSnapshotBacktestModel(model, dates, resultCache) {
   };
 }
 
+function calibrationProfileFromBacktestSummary(summary, lookbackDays = CALIBRATION_LOOKBACK_DAYS) {
+  const overall = {
+    picks: summary.projectedGames || 0,
+    correct: summary.correct || 0,
+    incorrect: summary.incorrect || 0,
+    accuracy: summary.accuracy ?? null,
+  };
+  if (!overall.picks) {
+    return emptyCalibrationProfile(
+      summary.model.id,
+      `No saved pregame picks were found for ${summary.model.shortName || summary.model.name} in the prior ${lookbackDays} days. Save snapshots before first pitch to calibrate confidence.`
+    );
+  }
+  return {
+    available: true,
+    modelId: summary.model.id,
+    model: summary.model,
+    lookbackDays,
+    source: summary.source,
+    sourceLabel: summary.sourceLabel,
+    generatedAt: new Date().toISOString(),
+    dateRange: { dates: summary.dates || null },
+    overall,
+    buckets: summary.buckets,
+    thresholds: summary.thresholds,
+    message: `Calibration sample: ${overall.picks} saved pregame picks at ${Number.isFinite(overall.accuracy) ? `${Math.round(overall.accuracy * 100)}%` : "n/a"} over the prior ${lookbackDays} days.`,
+  };
+}
+
+async function buildMlbCalibrationProfile(dateText, modelId = "core5", lookbackDays = CALIBRATION_LOOKBACK_DAYS) {
+  if (!blobToken()) {
+    return emptyCalibrationProfile(modelId, "Vercel Blob is not configured here, so live confidence labels are uncalibrated. Add BLOB_READ_WRITE_TOKEN, save pregame snapshots, then run backtests.");
+  }
+  const model = modelById(modelId);
+  const startDate = addDays(dateText, -lookbackDays);
+  const endDate = addDays(dateText, -1);
+  const dates = dateRange(startDate, endDate);
+  try {
+    const summary = await summarizeSnapshotBacktestModel(model, dates, new Map());
+    summary.dates = dates;
+    return calibrationProfileFromBacktestSummary(summary, lookbackDays);
+  } catch (error) {
+    return emptyCalibrationProfile(modelId, error.message || "Unable to load saved pregame calibration snapshots.");
+  }
+}
+
 async function buildMlbEstimatedBacktest(startDate, endDate, requestedModel = "all") {
   const dates = dateRange(startDate, endDate);
   const models = selectedModels(requestedModel);
@@ -2498,7 +2773,7 @@ async function buildMlbEstimatedBacktest(startDate, endDate, requestedModel = "a
   for (const model of models) {
     const scorecards = [];
     for (const date of dates) {
-      scorecards.push(await buildMlbScorecard(date, model.id));
+      scorecards.push(await buildMlbScorecard(date, model.id, { includeCalibration: false }));
     }
     summaries.push(summarizeBacktestModel(model, scorecards));
   }

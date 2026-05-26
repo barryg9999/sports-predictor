@@ -100,12 +100,20 @@ function captureTime(value) {
   return Number.isNaN(date.getTime()) ? "Not saved" : dateTimeFmt.format(date);
 }
 
-function confidenceClass(margin) {
-  if (!Number.isFinite(margin)) return "unavailable";
-  if (margin >= 12) return "strong";
-  if (margin >= 7) return "solid";
-  if (margin >= 3) return "lean";
-  return "tight";
+function confidenceClass(game) {
+  return game?.confidence?.className || (game?.projectionAvailable ? "unproven" : "unavailable");
+}
+
+function confidenceLabel(game, index) {
+  if (!game?.projectionAvailable) return "No projection";
+  const label = game.confidence?.label || "Uncalibrated";
+  return `${index + 1}. ${label}`;
+}
+
+function calibrationNote(calibration) {
+  if (!calibration) return "";
+  if (!calibration.available) return ` Confidence: ${esc(calibration.message || "Uncalibrated until saved pregame backtests exist.")}`;
+  return ` Confidence sample: <strong>${calibration.overall?.picks || 0}</strong> saved pregame picks over ${calibration.lookbackDays || 30} days at <strong>${accuracy(calibration.overall?.accuracy)}</strong>.`;
 }
 
 function actualResultHtml(result) {
@@ -274,7 +282,7 @@ function render(data) {
   oddsStatus.textContent = "Ready";
   oddsStatus.className = "pill";
   oddsRows.innerHTML = `<tr><td colspan="5" class="empty-row">Load odds to compare FanDuel, DraftKings, tie markets, and model edge for this slate.</td></tr>`;
-  scoreNote.innerHTML = `<strong>${esc(data.model?.name || "Model")}</strong>: ${esc(data.model?.description || "")} ${esc(data.notes.join(" "))} League FIP constant: <strong>${precise.format(data.league.fipConstant)}</strong>. League-average FIP fallback: <strong>${precise.format(data.league.averageFip)}</strong>. League estimated wOBA: <strong>${precise.format(data.league.woba)}</strong>.`;
+  scoreNote.innerHTML = `<strong>${esc(data.model?.name || "Model")}</strong>: ${esc(data.model?.description || "")} ${esc(data.notes.join(" "))}${calibrationNote(data.calibration)} League FIP constant: <strong>${precise.format(data.league.fipConstant)}</strong>. League-average FIP fallback: <strong>${precise.format(data.league.averageFip)}</strong>. League estimated wOBA: <strong>${precise.format(data.league.woba)}</strong>.`;
 
   if (!data.games.length) {
     scoreRows.innerHTML = `<tr><td colspan="7" class="empty-row">No MLB regular-season games found for this date.</td></tr>`;
@@ -285,10 +293,10 @@ function render(data) {
   scoreRows.innerHTML = data.games.map((game, index) => {
     const winner = game.projectionAvailable ? (game.winner.side === "home" ? game.home : game.away) : null;
     const loser = game.projectionAvailable ? (game.winner.side === "home" ? game.away : game.home) : null;
-    const klass = confidenceClass(game.margin);
+    const klass = confidenceClass(game);
     return `
       <tr class="${game.gamePk === selectedGamePk ? "selected" : ""}" data-game-pk="${game.gamePk}" tabindex="0" aria-selected="${game.gamePk === selectedGamePk ? "true" : "false"}">
-        <td><span class="edge-pill ${klass}">${game.projectionAvailable ? `${index + 1}. ${klass}` : "No projection"}</span></td>
+        <td><span class="edge-pill ${klass}" title="${esc(game.confidence?.reason || "")}">${esc(confidenceLabel(game, index))}</span></td>
         <td>
           <strong>${esc(game.away.abbreviation)} @ ${esc(game.home.abbreviation)}</strong>
           <span>${esc(game.venue)} · ${gameTime(game.gameDate)} · ${esc(game.status)}</span>
@@ -550,6 +558,10 @@ function thresholdAdvice(thresholds = []) {
     .filter((item) => item.picks >= 3)
     .sort((a, b) => b.accuracy - a.accuracy || b.picks - a.picks)[0];
   if (!useful) return "Need more completed picks before setting a no-pick threshold.";
+  const allPicks = thresholds.find((item) => item.threshold === 0);
+  if (allPicks?.picks >= 3 && Number.isFinite(allPicks.accuracy) && allPicks.accuracy < 0.5) {
+    return `This sample is below 50% (${accuracy(allPicks.accuracy)}). Treat this model as no-pick until more saved pregame data improves.`;
+  }
   if (useful.threshold === 0) return "No margin filter improved this sample. Treat all confidence labels as uncalibrated.";
   return `Best sample filter: only use picks with ${useful.label.toLowerCase()} (${accuracy(useful.accuracy)} on ${useful.picks} picks).`;
 }
@@ -560,6 +572,7 @@ function backtestSummaryCard(summary) {
     : "Rebuilt from the current MLB API response for the selected historical dates.";
   const bucketRows = ["strong", "solid", "lean", "tight"].map((key) => {
     const bucket = summary.buckets[key];
+    const rating = bucket.rating || {};
     return `
       <tr>
         <td><span class="edge-pill ${key}">${esc(key)}</span></td>
@@ -567,6 +580,7 @@ function backtestSummaryCard(summary) {
         <td>${bucket.correct}</td>
         <td>${bucket.incorrect}</td>
         <td>${accuracy(bucket.accuracy)}</td>
+        <td><span class="edge-pill ${esc(rating.className || "unproven")}">${esc(rating.label || "Unproven")}</span></td>
       </tr>
     `;
   }).join("");
@@ -610,7 +624,7 @@ function backtestSummaryCard(summary) {
         <div>
           <h4>Confidence Buckets</h4>
           <table class="score-table compact-table">
-            <thead><tr><th>Bucket</th><th>Picks</th><th>Right</th><th>Wrong</th><th>Accuracy</th></tr></thead>
+            <thead><tr><th>Bucket</th><th>Picks</th><th>Right</th><th>Wrong</th><th>Accuracy</th><th>Use</th></tr></thead>
             <tbody>${bucketRows}</tbody>
           </table>
         </div>

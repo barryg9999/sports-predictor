@@ -705,6 +705,14 @@ input[type="hidden"] {
   background: #64748b;
 }
 
+.edge-pill.unproven {
+  background: #64748b;
+}
+
+.edge-pill.no-edge {
+  background: #b42318;
+}
+
 .edge-pill.unavailable {
   background: #a15c07;
 }
