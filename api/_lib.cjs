@@ -923,15 +923,31 @@ function formatSamfordValue(id, value) {
   return Math.round(value).toString();
 }
 
-function normalizePairScore(value, otherValue, direction) {
+function samfordGamesPlayed(side = {}) {
+  const games = statNumber(side.teamHittingStat, ["gamesPlayed", "games"], null)
+    ?? statNumber(side.teamPitchingStat, ["gamesPlayed", "games"], null);
+  if (Number.isFinite(games) && games > 0) return games;
+  const hittingAtBats = num(side.teamHittingStat?.atBats);
+  if (hittingAtBats > 0) return clamp(hittingAtBats / 34, 1, 162);
+  return 162;
+}
+
+function samfordAverageGames(away, home) {
+  return (samfordGamesPlayed(away) + samfordGamesPlayed(home)) / 2;
+}
+
+function samfordScale(definition, away, home) {
+  const scale = typeof definition.scale === "function" ? definition.scale(away, home) : definition.scale;
+  return Number.isFinite(scale) && scale > 0 ? scale : 1;
+}
+
+function calibratedPairScore(value, otherValue, definition, away, home) {
   if (!Number.isFinite(value) && !Number.isFinite(otherValue)) return 50;
-  if (!Number.isFinite(value)) return 0;
-  if (!Number.isFinite(otherValue)) return 100;
+  if (!Number.isFinite(value) || !Number.isFinite(otherValue)) return 50;
   if (Math.abs(value - otherValue) < 0.0000001) return 50;
-  const low = Math.min(value, otherValue);
-  const high = Math.max(value, otherValue);
-  const normalized = (value - low) / (high - low);
-  return (direction === "lower" ? 1 - normalized : normalized) * 100;
+  const signedDiff = definition.direction === "lower" ? otherValue - value : value - otherValue;
+  const edge = clamp((signedDiff / samfordScale(definition, away, home)) * 18, -18, 18);
+  return 50 + edge;
 }
 
 function parkFactorForVenue(venueName) {
@@ -1434,6 +1450,7 @@ const samfordTopTenStats = [
     weightRank: 10,
     direction: "higher",
     value: (side) => num(side.teamHittingStat?.runs) - num(side.teamPitchingStat?.runs),
+    scale: (away, home) => Math.max(35, samfordAverageGames(away, home) * 1.5),
     source: "Run differential",
   },
   {
@@ -1442,6 +1459,7 @@ const samfordTopTenStats = [
     weightRank: 9,
     direction: "lower",
     value: (side) => teamEra(side.teamPitchingStat),
+    scale: 1.4,
     source: "Team pitching ERA",
   },
   {
@@ -1450,6 +1468,7 @@ const samfordTopTenStats = [
     weightRank: 8,
     direction: "lower",
     value: (side, context) => fipFromStat(side.teamPitchingStat, context.fipConstant),
+    scale: 1.2,
     source: "Team FIP",
   },
   {
@@ -1458,6 +1477,7 @@ const samfordTopTenStats = [
     weightRank: 7,
     direction: "higher",
     value: (side) => teamLeftOnBasePct(side.teamPitchingStat),
+    scale: 0.07,
     source: "Strand-rate proxy",
   },
   {
@@ -1466,6 +1486,7 @@ const samfordTopTenStats = [
     weightRank: 6,
     direction: "higher",
     value: (side, context) => pitchingWarValue(side.teamPitchingStat, context.fipConstant),
+    scale: (away, home) => Math.max(4, samfordAverageGames(away, home) * 0.11),
     source: "Pitching WAR proxy",
   },
   {
@@ -1474,6 +1495,7 @@ const samfordTopTenStats = [
     weightRank: 5,
     direction: "lower",
     value: (side) => teamWhip(side.teamPitchingStat),
+    scale: 0.3,
     source: "Team WHIP",
   },
   {
@@ -1482,6 +1504,7 @@ const samfordTopTenStats = [
     weightRank: 4,
     direction: "lower",
     value: (side) => teamHitsPerNine(side.teamPitchingStat),
+    scale: 2,
     source: "Hits allowed per 9",
   },
   {
@@ -1490,6 +1513,7 @@ const samfordTopTenStats = [
     weightRank: 3,
     direction: "lower",
     value: (side) => teamBattingAverageAgainst(side.teamPitchingStat),
+    scale: 0.045,
     source: "Batting average against",
   },
   {
@@ -1498,6 +1522,7 @@ const samfordTopTenStats = [
     weightRank: 2,
     direction: "higher",
     value: (side) => offensiveWarValue(side.teamHittingStat),
+    scale: (away, home) => Math.max(4, samfordAverageGames(away, home) * 0.11),
     source: "Offensive WAR proxy",
   },
   {
@@ -1506,6 +1531,7 @@ const samfordTopTenStats = [
     weightRank: 1,
     direction: "higher",
     value: (side) => statNumber(side.teamPitchingStat, ["SV", "sv", "saves"], 0),
+    scale: (away, home) => Math.max(4, samfordAverageGames(away, home) * 0.12),
     source: "Team saves",
   },
 ];
@@ -1520,8 +1546,9 @@ function samfordTopTenPairComponents(away, home, context) {
   samfordTopTenStats.forEach((definition) => {
     const awayValue = definition.value(away, context);
     const homeValue = definition.value(home, context);
-    const awayScore = normalizePairScore(awayValue, homeValue, definition.direction);
-    const homeScore = normalizePairScore(homeValue, awayValue, definition.direction);
+    const awayScore = calibratedPairScore(awayValue, homeValue, definition, away, home);
+    const homeScore = calibratedPairScore(homeValue, awayValue, definition, away, home);
+    const scale = samfordScale(definition, away, home);
     const winnerSide = awayScore === homeScore ? "tie" : (awayScore > homeScore ? "away" : "home");
     if (winnerSide === "away") output.away.statWins += 1;
     if (winnerSide === "home") output.home.statWins += 1;
@@ -1539,7 +1566,7 @@ function samfordTopTenPairComponents(away, home, context) {
         definition.label,
         definition.weightRank / totalWeight,
         sideScore,
-        `${advantage}; ${definition.source}: ${formatSamfordValue(definition.id, value)} vs ${formatSamfordValue(definition.id, otherValue)}; weighted contribution ${contribution.toFixed(1)}`,
+        `${advantage}; ${definition.source}: ${formatSamfordValue(definition.id, value)} vs ${formatSamfordValue(definition.id, otherValue)}; calibrated scale ${formatSamfordValue(definition.id, scale)}; weighted contribution ${contribution.toFixed(1)}`,
         value
       ));
     });
@@ -1892,7 +1919,7 @@ async function buildMlbScorecard(dateText, modelId = "core5") {
       selectedModel.id === "expanded10" ? "Expanded 10 uses MLB public-feed proxies for xFIP/SIERA, xwOBA/xSLG, xERA, xwOBA allowed, bullpen availability, and OAA/DRS until richer data sources are added." : "",
       selectedModel.id === "pitchingContext18" ? "Pitching Context 18 uses an HR-normalized xFIP proxy, batter-handedness split proxy, starter workload from last game log, 30-day bullpen ERA, and neutral fallbacks for weather, umpire-zone, catcher-framing, and confirmed-lineup inputs until those feeds are connected. Scale factor 2.5 is kept as a calibration target for future log-loss backtesting." : "",
       selectedModel.id === "starterPqs" ? "Starter PQS is a starting-pitcher-only report. It intentionally excludes bullpen and team offense from the score; SIERA, barrel, whiff, chase, velocity, zone, weather, and umpire values use transparent proxies or neutral fallbacks where the current MLB Stats API does not expose the requested source fields." : "",
-      selectedModel.id === "samfordTop10" ? "Samford Top 10 compares the two teams directly with min-max normalization. MLB Stats API fields are used where available; pWAR and oWAR use transparent proxies until FanGraphs WAR columns are connected." : "",
+      selectedModel.id === "samfordTop10" ? "Samford Top 10 compares the two teams with calibrated edge scaling around a neutral 50 score. MLB Stats API fields are used where available; pWAR and oWAR use transparent proxies until FanGraphs WAR columns are connected." : "",
     ].filter(Boolean),
     league: { fipConstant, averageFip: pitchingContext.averageFip, leagueHrPerIp: pitchingContext.leagueHrPerIp, woba: leagueWoba },
     games: rows,

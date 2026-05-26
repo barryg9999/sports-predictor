@@ -24,6 +24,20 @@ WEIGHTS = {
 }
 
 LOWER_IS_BETTER = {"ERA", "FIP", "WHIP", "H9", "BAA"}
+MAX_STAT_EDGE = 18
+
+STAT_SCALES = {
+    "RD": 243,        # roughly 1.5 runs/game over 162 games
+    "ERA": 1.4,
+    "FIP": 1.2,
+    "LOB_pct": 0.07,
+    "pWAR": 17.8,    # roughly 0.11 WAR/game over 162 games
+    "WHIP": 0.30,
+    "H9": 2.0,
+    "BAA": 0.045,
+    "oWAR": 17.8,
+    "SV": 19.4,      # roughly 0.12 saves/game over 162 games
+}
 
 STAT_LABELS = {
     "RD": "RD",
@@ -88,14 +102,13 @@ def read_stat(stats, stat_key):
     raise KeyError(f"Missing required stat {stat_key}")
 
 
-def normalize_pair(team_value, opponent_value, lower_is_better=False):
-    """Min-max normalize two values, inverting lower-is-better stats."""
+def normalize_pair(team_value, opponent_value, stat, lower_is_better=False):
+    """Calibrate the two-team edge around 50 instead of winner-take-all."""
     if team_value == opponent_value:
         return 0.5
-    low = min(team_value, opponent_value)
-    high = max(team_value, opponent_value)
-    normalized = (team_value - low) / (high - low)
-    return 1.0 - normalized if lower_is_better else normalized
+    signed_diff = opponent_value - team_value if lower_is_better else team_value - opponent_value
+    edge = max(-MAX_STAT_EDGE, min(MAX_STAT_EDGE, (signed_diff / STAT_SCALES[stat]) * MAX_STAT_EDGE))
+    return (50 + edge) / 100
 
 
 def format_value(stat, value):
@@ -123,7 +136,7 @@ def score_teams(teams):
     for stat, weight in WEIGHTS.items():
         values = {name: read_stat(teams[name], stat) for name in names}
         normalized = {
-            name: normalize_pair(values[name], values[names[1 if name == names[0] else 0]], stat in LOWER_IS_BETTER)
+            name: normalize_pair(values[name], values[names[1 if name == names[0] else 0]], stat, stat in LOWER_IS_BETTER)
             for name in names
         }
 
