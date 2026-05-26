@@ -202,8 +202,9 @@ function renderModelBar(model) {
 function syncModelOptions(models = []) {
   if (!models.length) return;
   syncModelSelect(modelSelect, models);
-  syncModelSelect(snapshotModel, models, true);
-  syncModelSelect(backtestModel, models, true);
+  const snapshotModels = models.filter((model) => model.snapshotEligible !== false);
+  syncModelSelect(snapshotModel, snapshotModels, true);
+  syncModelSelect(backtestModel, snapshotModels, true);
 }
 
 function sideCard(side, projectionAvailable) {
@@ -250,7 +251,10 @@ function renderSelectedGame() {
   const game = currentScorecard.games.find((item) => item.gamePk === selectedGamePk) || currentScorecard.games[0];
   selectedGamePk = game.gamePk;
   const marginText = game.projectionAvailable ? `margin ${score(game.margin)}` : "winner cannot be projected";
-  const componentCount = currentScorecard?.model?.components?.length || 5;
+  const componentCount = game.away?.components?.length || currentScorecard?.model?.components?.length || 5;
+  const marketAnchorNote = currentScorecard?.model?.id === "marketAnchored"
+    ? " Model 7 becomes actionable only after odds are loaded; this view shows the pre-market signal."
+    : "";
   gameDetails.innerHTML = `
     <article class="game-detail-card selected-game-card">
       <div class="game-title">
@@ -264,7 +268,7 @@ function renderSelectedGame() {
         </div>
       </div>
       ${game.projectionAvailable ? "" : `<p class="projection-warning">${esc(game.projectionNote)}</p>`}
-      <p class="selected-note">${componentCount + 1} values are shown for each team: composite plus the ${componentCount} weighted scoring components.</p>
+      <p class="selected-note">${componentCount + 1} values are shown for each team: composite plus the ${componentCount} weighted scoring components.${marketAnchorNote}</p>
       <div class="matchup-grid">
         ${sideCard(game.away, game.projectionAvailable)}
         ${sideCard(game.home, game.projectionAvailable)}
@@ -290,7 +294,9 @@ function render(data) {
   syncModelOptions(data.models || []);
   renderModelBar(data.model);
   resultTitle.textContent = `${data.totalGames} ${data.sport?.name || "MLB"} games scored for ${data.date}`;
-  oddsContext.textContent = `Uses ${data.model?.name || "selected model"} for ${data.date}.`;
+  oddsContext.textContent = data.model?.id === "marketAnchored"
+    ? `Load odds to automate Pick / No Pick using ${data.model.name} for ${data.date}.`
+    : `Uses ${data.model?.name || "selected model"} for ${data.date}.`;
   oddsStatus.textContent = "Ready";
   oddsStatus.className = "pill";
   oddsRows.innerHTML = `<tr><td colspan="5" class="empty-row">Load odds to compare FanDuel, DraftKings, tie markets, and model edge for this slate.</td></tr>`;
@@ -385,7 +391,26 @@ function valueClass(edge) {
   return "neutral";
 }
 
+function marketAnchorHtml(game) {
+  const decision = game.marketAnchorDecision;
+  if (!decision) return "";
+  if (decision.action === "unavailable") {
+    return `<span class="market-note">${esc(decision.reason || "Market decision unavailable.")}</span>`;
+  }
+  const candidate = decision.pick || decision.candidate;
+  const best = decision.bestMoneyline;
+  return `
+    <div class="market-edge ${decision.action === "pick" ? "positive" : "neutral"}">
+      <strong>${esc(decision.label)}</strong>
+      <span>${candidate ? `${esc(candidate.abbreviation)} anchored ${accuracy(decision.anchoredProbability)} vs market ${accuracy(decision.marketProbability)}` : "No actionable side"}</span>
+      <span>Model signal ${accuracy(decision.modelProbability)} · edge ${signedPct(decision.edge)}${best && decision.action === "pick" ? ` · best ML ${esc(best.bookLabel)} ${american(best.price)}` : ""}</span>
+      <span>${esc(decision.reason || "")}</span>
+    </div>
+  `;
+}
+
 function oddsEdgeHtml(game) {
+  if (game.marketAnchorDecision) return marketAnchorHtml(game);
   if (!game.projectionAvailable || !game.pick) {
     return `<span class="market-note">No model projection</span>`;
   }
@@ -443,7 +468,12 @@ function renderOdds(data) {
     return;
   }
   const matched = data.games.filter((game) => game.matchedOdds).length;
-  oddsNote.textContent = `${data.provider}: ${matched} of ${data.games.length} games matched. ${data.requestsRemaining === null ? "" : `${data.requestsRemaining} odds requests remaining. `}${(data.notes || []).join(" ")}`;
+  const pickCount = data.games.filter((game) => game.marketAnchorDecision?.action === "pick").length;
+  const pickText = data.model?.id === "marketAnchored" ? `${pickCount} automated picks. ` : "";
+  oddsContext.textContent = data.signalModel
+    ? `Uses ${data.model?.name || "market anchor"} with ${data.signalModel.name || "signal model"} for ${data.date}.`
+    : `Uses ${data.model?.name || "selected model"} for ${data.date}.`;
+  oddsNote.textContent = `${data.provider}: ${matched} of ${data.games.length} games matched. ${pickText}${data.requestsRemaining === null ? "" : `${data.requestsRemaining} odds requests remaining. `}${(data.notes || []).join(" ")}`;
   oddsRows.innerHTML = data.games.length
     ? data.games.map(oddsGameRow).join("")
     : `<tr><td colspan="5" class="empty-row">No odds games returned for this date.</td></tr>`;

@@ -19,6 +19,12 @@ const CALIBRATION_LOOKBACK_DAYS = 30;
 const MIN_CALIBRATION_OVERALL_PICKS = 30;
 const MIN_CALIBRATION_BUCKET_PICKS = 20;
 const WEIGHTED_SIGMOID_K = 2.5;
+const MARKET_ANCHOR_SIGNAL_MODEL_ID = "weightedSigmoid";
+const MARKET_ANCHOR_BLEND = 0.35;
+const MARKET_ANCHOR_MAX_ADJUSTMENT = 0.08;
+const MARKET_ANCHOR_NO_PICK_EDGE = 0.03;
+const MARKET_ANCHOR_VALUE_EDGE = 0.05;
+const MARKET_ANCHOR_STRONG_EDGE = 0.075;
 
 const samfordArticleTopTen = [
   { id: "RD", label: "1 RD", weightRank: 10, direction: "higher", articleName: "Run differential" },
@@ -144,6 +150,20 @@ const mlbModels = [
       { id: "offense", label: "Offense", weight: 0.20 },
       { id: "environment", label: "Environment", weight: 0.10 },
       { id: "umpireFraming", label: "Umpire / Framing", weight: 0.05 },
+    ],
+  },
+  {
+    id: "marketAnchored",
+    sport: "mlb",
+    name: "7 - Market-anchored value engine",
+    shortName: "7 Market Anchor",
+    description: "Automated odds-aware engine: starts with no-vig FanDuel/DraftKings moneyline probability, applies a capped Model 6 adjustment, and returns Pick or No Pick based on market edge.",
+    requiresMarket: true,
+    snapshotEligible: false,
+    components: [
+      { id: "marketBaseline", label: "No-vig market baseline", weight: 0.70 },
+      { id: "modelAdjustment", label: "Capped model adjustment", weight: 0.25 },
+      { id: "noPickDiscipline", label: "No-pick discipline", weight: 0.05 },
     ],
   },
 ];
@@ -736,13 +756,103 @@ function valueLabel(edge) {
   return "Fair price";
 }
 
-function buildOddsComparisonForGame(game, oddsEvent) {
+function marketAnchorLabel(edge) {
+  if (!Number.isFinite(edge) || edge < MARKET_ANCHOR_NO_PICK_EDGE) return "No Pick";
+  if (edge >= MARKET_ANCHOR_STRONG_EDGE) return "Strong value";
+  if (edge >= MARKET_ANCHOR_VALUE_EDGE) return "Value";
+  return "Lean value";
+}
+
+function marketAnchoredDecision(game, marketProbabilities, modelProbabilities, books) {
+  const awayMarket = marketProbabilities.away;
+  const homeMarket = marketProbabilities.home;
+  const awayModel = modelProbabilities.away;
+  const homeModel = modelProbabilities.home;
+  if (![awayMarket, homeMarket, awayModel, homeModel].every(Number.isFinite)) {
+    return {
+      mode: "marketAnchored",
+      action: "unavailable",
+      label: "No Pick",
+      reason: "Market or model probability is unavailable.",
+      pick: null,
+      edge: null,
+    };
+  }
+
+  const rawAwayGap = awayModel - awayMarket;
+  const cappedAdjustment = clamp(rawAwayGap * MARKET_ANCHOR_BLEND, -MARKET_ANCHOR_MAX_ADJUSTMENT, MARKET_ANCHOR_MAX_ADJUSTMENT);
+  const anchoredAway = clamp(awayMarket + cappedAdjustment, 0.02, 0.98);
+  const anchoredHome = 1 - anchoredAway;
+  const awayEdge = anchoredAway - awayMarket;
+  const homeEdge = anchoredHome - homeMarket;
+  const pickSide = awayEdge >= homeEdge ? "away" : "home";
+  const pickEdge = pickSide === "away" ? awayEdge : homeEdge;
+  const side = pickSide === "away" ? game.away : game.home;
+  const rawModelEdge = pickSide === "away" ? rawAwayGap : homeModel - homeMarket;
+  const modelProbability = pickSide === "away" ? awayModel : homeModel;
+  const marketProbability = pickSide === "away" ? awayMarket : homeMarket;
+  const anchoredProbability = pickSide === "away" ? anchoredAway : anchoredHome;
+  const adjustment = anchoredProbability - marketProbability;
+  const bestMoneyline = bestMoneylineForSide(books, pickSide);
+  const hasPick = pickEdge >= MARKET_ANCHOR_NO_PICK_EDGE;
+
+  return {
+    mode: "marketAnchored",
+    action: hasPick ? "pick" : "no_pick",
+    label: marketAnchorLabel(pickEdge),
+    pick: hasPick ? {
+      side: pickSide,
+      teamName: side.teamName,
+      abbreviation: side.abbreviation,
+    } : null,
+    candidate: {
+      side: pickSide,
+      teamName: side.teamName,
+      abbreviation: side.abbreviation,
+    },
+    edge: pickEdge,
+    rawModelEdge,
+    adjustment,
+    modelProbability,
+    marketProbability,
+    anchoredProbability,
+    away: {
+      marketProbability: awayMarket,
+      modelProbability: awayModel,
+      anchoredProbability: anchoredAway,
+      edge: awayEdge,
+    },
+    home: {
+      marketProbability: homeMarket,
+      modelProbability: homeModel,
+      anchoredProbability: anchoredHome,
+      edge: homeEdge,
+    },
+    bestMoneyline,
+    thresholds: {
+      noPick: MARKET_ANCHOR_NO_PICK_EDGE,
+      value: MARKET_ANCHOR_VALUE_EDGE,
+      strong: MARKET_ANCHOR_STRONG_EDGE,
+      maxAdjustment: MARKET_ANCHOR_MAX_ADJUSTMENT,
+      blend: MARKET_ANCHOR_BLEND,
+    },
+    reason: hasPick
+      ? `${side.abbreviation} clears the ${(MARKET_ANCHOR_NO_PICK_EDGE * 100).toFixed(0)}% no-pick threshold after market anchoring.`
+      : `Best adjusted edge is ${(Math.max(awayEdge, homeEdge) * 100).toFixed(1)}%, below the ${(MARKET_ANCHOR_NO_PICK_EDGE * 100).toFixed(0)}% no-pick threshold.`,
+  };
+}
+
+function buildOddsComparisonForGame(game, oddsEvent, options = {}) {
   const rawBooks = oddsEvent
     ? (oddsEvent.bookmakers || []).map((bookmaker) => normalizeBookOdds(bookmaker, oddsEvent, game)).filter(Boolean)
     : [];
   const books = oddsBookmakers.map((book) => rawBooks.find((item) => item.key === book.key) || emptyBookOdds(book.key));
   const marketProbabilities = averageMarketProbabilities(books);
   const modelProbabilities = modelSideProbabilities(game);
+  const useMarketAnchor = options.mode === "marketAnchored";
+  const marketAnchorDecision = useMarketAnchor
+    ? marketAnchoredDecision(game, marketProbabilities, modelProbabilities, books)
+    : null;
   const pickSide = game.winner?.side || null;
   const modelProbability = pickSide ? modelProbabilities[pickSide] : null;
   const marketProbability = pickSide ? marketProbabilities[pickSide] : null;
@@ -770,6 +880,7 @@ function buildOddsComparisonForGame(game, oddsEvent) {
     edge,
     valueLabel: valueLabel(edge),
     bestMoneyline: pickSide ? bestMoneylineForSide(books, pickSide) : null,
+    marketAnchorDecision,
     books,
     tieOutcomes: books
       .map((book) => book.moneyline.tie ? { book: book.key, bookLabel: book.label, ...book.moneyline.tie } : null)
@@ -780,6 +891,9 @@ function buildOddsComparisonForGame(game, oddsEvent) {
 }
 
 async function buildMlbOddsComparison(dateText, modelId = "core5") {
+  const requestedModel = modelById(modelId);
+  const useMarketAnchor = requestedModel.id === "marketAnchored";
+  const scoreModelId = useMarketAnchor ? MARKET_ANCHOR_SIGNAL_MODEL_ID : requestedModel.id;
   const oddsResult = await fetchMlbBookOdds();
   if (!oddsResult.configured) {
     return {
@@ -789,14 +903,25 @@ async function buildMlbOddsComparison(dateText, modelId = "core5") {
       generatedAt: new Date().toISOString(),
       provider: "The Odds API",
       books: oddsBookmakers,
+      model: requestedModel,
       requiredEnv: ["ODDS_API_KEY", "THE_ODDS_API_KEY"],
       message: oddsResult.message,
       games: [],
     };
   }
 
-  const scorecard = await buildMlbScorecard(dateText, modelId);
-  const games = scorecard.games.map((game) => buildOddsComparisonForGame(game, matchOddsEvent(game, oddsResult.events)));
+  const scorecard = await buildMlbScorecard(dateText, scoreModelId);
+  const games = scorecard.games
+    .map((game) => buildOddsComparisonForGame(game, matchOddsEvent(game, oddsResult.events), {
+      mode: useMarketAnchor ? "marketAnchored" : "standard",
+    }))
+    .sort((a, b) => {
+      if (!useMarketAnchor) return 0;
+      const aPick = a.marketAnchorDecision?.action === "pick";
+      const bPick = b.marketAnchorDecision?.action === "pick";
+      if (aPick !== bPick) return aPick ? -1 : 1;
+      return (b.marketAnchorDecision?.edge || 0) - (a.marketAnchorDecision?.edge || 0);
+    });
   return {
     configured: true,
     sport: sports[0],
@@ -804,16 +929,20 @@ async function buildMlbOddsComparison(dateText, modelId = "core5") {
     generatedAt: new Date().toISOString(),
     provider: "The Odds API",
     books: oddsBookmakers,
-    model: scorecard.model,
+    model: requestedModel,
+    signalModel: useMarketAnchor ? scorecard.model : null,
     calibration: scorecard.calibration,
     requestsRemaining: oddsResult.requestsRemaining,
     notes: [
       "Moneyline probabilities are no-vig averages from FanDuel and DraftKings when both sides are available.",
-      scorecard.calibration?.available
+      useMarketAnchor
+        ? `Market Anchor starts with no-vig book probability, uses ${scorecard.model.name} as the signal, blends ${Math.round(MARKET_ANCHOR_BLEND * 100)}% of the model-market gap, caps adjustment at ${(MARKET_ANCHOR_MAX_ADJUSTMENT * 100).toFixed(0)} points, and requires at least ${(MARKET_ANCHOR_NO_PICK_EDGE * 100).toFixed(0)} points of final edge for a pick.`
+        : "",
+      !useMarketAnchor && scorecard.calibration?.available
         ? "Model probabilities are score-implied from composite margin; confidence labels are separately gated by saved pregame backtests."
-        : "Model probabilities are score-implied estimates from composite margin. Treat them as uncalibrated until saved pregame backtests prove the bucket.",
+        : (!useMarketAnchor ? "Model probabilities are score-implied estimates from composite margin. Treat them as uncalibrated until saved pregame backtests prove the bucket." : ""),
       "MLB full-game moneyline is normally two-way; a tie appears only if a book returns a 3-way/tie market. Run lines and totals can push on whole-number lines.",
-    ],
+    ].filter(Boolean),
     games,
   };
 }
@@ -1365,8 +1494,11 @@ function modelById(modelId) {
   return mlbModels.find((model) => model.id === modelId) || mlbModels[0];
 }
 
-function selectedModels(requestedModel = "all") {
-  return requestedModel === "all" ? mlbModels : [modelById(requestedModel)];
+function selectedModels(requestedModel = "all", options = {}) {
+  const models = requestedModel === "all" ? mlbModels : [modelById(requestedModel)];
+  return options.snapshotEligibleOnly
+    ? models.filter((model) => model.snapshotEligible !== false)
+    : models;
 }
 
 function actualGameResult(game) {
@@ -2182,6 +2314,9 @@ function scoreWeightedSigmoidPair(awaySource, homeSource, context) {
 async function buildMlbScorecard(dateText, modelId = "core5", options = {}) {
   const includeCalibration = options.includeCalibration !== false;
   const selectedModel = modelById(modelId);
+  const scoringModel = selectedModel.id === "marketAnchored"
+    ? modelById(MARKET_ANCHOR_SIGNAL_MODEL_ID)
+    : selectedModel;
   const schedule = await mlbFetch(`/api/v1/schedule?sportId=1&gameTypes=R&date=${dateText}&hydrate=probablePitcher,team`);
   const games = (schedule.dates || []).flatMap((date) => date.games || []);
   const season = games[0]?.season || dateText.slice(0, 4);
@@ -2202,7 +2337,7 @@ async function buildMlbScorecard(dateText, modelId = "core5", options = {}) {
     pitcherMap(pitcherIds, season),
     bullpenSnapshots(teamIds, dateText, fipConstant),
     starterWorkloadMap(pitcherIds, dateText, season, pitchingContext),
-    selectedModel.id === "weightedSigmoid" ? recentTeamHittingMap(teamIds, dateText, season, leagueWoba) : Promise.resolve(new Map()),
+    scoringModel.id === "weightedSigmoid" ? recentTeamHittingMap(teamIds, dateText, season, leagueWoba) : Promise.resolve(new Map()),
   ]);
 
   const rows = await Promise.all(games.map(async (game) => {
@@ -2278,9 +2413,9 @@ async function buildMlbScorecard(dateText, modelId = "core5", options = {}) {
       temperatureF: null,
       umpireZoneFactor: 0,
     };
-    const modelResult = selectedModel.id === "weightedSigmoid"
+    const modelResult = scoringModel.id === "weightedSigmoid"
       ? scoreWeightedSigmoidPair(away, home, sharedContext)
-      : scoreSingleModelPair(selectedModel, away, home, sharedContext);
+      : scoreSingleModelPair(scoringModel, away, home, sharedContext);
     Object.assign(away, {
       components: modelResult.away.components,
       composite: modelResult.away.composite,
@@ -2351,6 +2486,7 @@ async function buildMlbScorecard(dateText, modelId = "core5", options = {}) {
     sport: sports[0],
     sports,
     model: selectedModel,
+    signalModel: scoringModel.id !== selectedModel.id ? scoringModel : null,
     models: mlbModels,
     calibration,
     notes: [
@@ -2368,8 +2504,9 @@ async function buildMlbScorecard(dateText, modelId = "core5", options = {}) {
       selectedModel.id === "starterPqs" ? "Starter PQS is a starting-pitcher-only report. It intentionally excludes bullpen and team offense from the score; SIERA, barrel, whiff, chase, velocity, zone, weather, and umpire values use transparent proxies or neutral fallbacks where the current MLB Stats API does not expose the requested source fields." : "",
       selectedModel.id === "samfordTop10" ? "Samford Top 10 uses only the article's ranked indicators, in order: RD, ERA, FIP, LOB%, pWAR, WHIP, H/9, BAA, oWAR, and SV. No speed, stolen-base, error, fielding-percentage, pitch-type, or velocity inputs are included." : "",
       selectedModel.id === "samfordTop10" ? "Full FanGraphs fidelity requires direct pWAR, oWAR, and LOB% fields. MLB Stats API fields are used where available; pWAR/oWAR and LOB% fall back to transparent proxies until exact FanGraphs columns are connected." : "",
-      selectedModel.id === "weightedSigmoid" ? `Model 6 normalizes each requested metric to 0-1, applies the specified category and sub-metric weights, and uses tuned sigmoid k=${WEIGHTED_SIGMOID_K} to display each team's win probability.` : "",
-      selectedModel.id === "weightedSigmoid" ? "Model 6 uses MLB Stats API proxies for xFIP, rolling xFIP, split wRC+, recent offense, bullpen FIP, and bullpen workload; weather, umpire-zone, catcher-framing, and confirmed-lineup availability remain neutral fallbacks until those feeds are connected." : "",
+      scoringModel.id === "weightedSigmoid" ? `Model 6 normalizes each requested metric to 0-1, applies the specified category and sub-metric weights, and uses tuned sigmoid k=${WEIGHTED_SIGMOID_K} to display each team's win probability.` : "",
+      scoringModel.id === "weightedSigmoid" ? "Model 6 uses MLB Stats API proxies for xFIP, rolling xFIP, split wRC+, recent offense, bullpen FIP, and bullpen workload; weather, umpire-zone, catcher-framing, and confirmed-lineup availability remain neutral fallbacks until those feeds are connected." : "",
+      selectedModel.id === "marketAnchored" ? "Model 7 is odds-aware: this scorecard shows its Model 6 pre-market signal only. Load Odds to get the automated Pick / No Pick decision after no-vig market probability, capped adjustment, and edge threshold are applied." : "",
       calibration.available ? `Confidence labels use saved pregame snapshots from the prior ${calibration.lookbackDays} days: ${calibration.overall.picks} picks at ${Math.round((calibration.overall.accuracy || 0) * 100)}%.` : calibration.message,
     ].filter(Boolean),
     league: { fipConstant, averageFip: pitchingContext.averageFip, leagueHrPerIp: pitchingContext.leagueHrPerIp, woba: leagueWoba },
@@ -2621,13 +2758,13 @@ async function listMlbSnapshotInventory(dateText = null, requestedModel = "all")
   ensureBlobConfigured();
   const stores = [];
   if (dateText) {
-    for (const model of selectedModels(requestedModel)) {
+    for (const model of selectedModels(requestedModel, { snapshotEligibleOnly: true })) {
       stores.push(await readSnapshotStore(dateText, model.id));
     }
   } else {
     const documents = await listSnapshotBlobDocuments();
     for (const document of documents) {
-      for (const model of selectedModels(requestedModel)) {
+      for (const model of selectedModels(requestedModel, { snapshotEligibleOnly: true })) {
         stores.push(normalizeSnapshotStore(document.models?.[model.id], document.date, model.id));
       }
     }
@@ -2651,7 +2788,7 @@ async function saveMlbPredictionSnapshots(dateText, requestedModel = "all") {
   const summaries = [];
   let changed = false;
 
-  for (const model of selectedModels(requestedModel)) {
+  for (const model of selectedModels(requestedModel, { snapshotEligibleOnly: true })) {
     const scorecard = await buildMlbScorecard(dateText, model.id, { includeCalibration: false });
     const openGames = scorecard.games.filter((game) => !game.actualResult?.isFinal);
     const capturedAt = new Date().toISOString();
@@ -2957,7 +3094,7 @@ async function buildMlbCalibrationProfile(dateText, modelId = "core5", lookbackD
 
 async function buildMlbEstimatedBacktest(startDate, endDate, requestedModel = "all") {
   const dates = dateRange(startDate, endDate);
-  const models = selectedModels(requestedModel);
+  const models = selectedModels(requestedModel, { snapshotEligibleOnly: true });
   const summaries = [];
 
   for (const model of models) {
@@ -2987,7 +3124,7 @@ async function buildMlbSnapshotBacktest(startDate, endDate, requestedModel = "al
   const dates = dateRange(startDate, endDate);
   const resultCache = new Map();
   const summaries = [];
-  for (const model of selectedModels(requestedModel)) {
+  for (const model of selectedModels(requestedModel, { snapshotEligibleOnly: true })) {
     summaries.push(await summarizeSnapshotBacktestModel(model, dates, resultCache));
   }
   return {
