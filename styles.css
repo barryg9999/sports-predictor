@@ -961,6 +961,15 @@ input[type="hidden"] {
   font-size: 12px;
 }
 
+.market-edge span b {
+  color: var(--ink);
+}
+
+.market-edge .market-insight,
+.market-edge .market-action {
+  line-height: 1.35;
+}
+
 .market-edge.positive {
   background: rgba(6, 118, 71, 0.1);
   border: 1px solid rgba(6, 118, 71, 0.22);

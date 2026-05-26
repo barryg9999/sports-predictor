@@ -541,6 +541,22 @@ function americanOddsToProbability(price) {
   return value > 0 ? 100 / (value + 100) : Math.abs(value) / (Math.abs(value) + 100);
 }
 
+function probabilityToAmericanOdds(probability) {
+  if (!Number.isFinite(probability) || probability <= 0 || probability >= 1) return null;
+  return probability >= 0.5
+    ? Math.round((-100 * probability) / (1 - probability))
+    : Math.round((100 * (1 - probability)) / probability);
+}
+
+function formatPercent(probability) {
+  return Number.isFinite(probability) ? `${(probability * 100).toFixed(1)}%` : "N/A";
+}
+
+function formatAmericanOdds(price) {
+  if (!Number.isFinite(price)) return "N/A";
+  return price > 0 ? `+${price}` : String(price);
+}
+
 function modelSideProbabilities(game) {
   if (!game.projectionAvailable || !Number.isFinite(game.away?.composite) || !Number.isFinite(game.home?.composite)) {
     return { away: null, home: null };
@@ -774,6 +790,8 @@ function marketAnchoredDecision(game, marketProbabilities, modelProbabilities, b
       action: "unavailable",
       label: "No Pick",
       reason: "Market or model probability is unavailable.",
+      insight: "The app cannot compare the model to the sportsbook market for this game yet.",
+      actionText: "Pass this game until both odds and model probabilities are available.",
       pick: null,
       edge: null,
     };
@@ -795,6 +813,17 @@ function marketAnchoredDecision(game, marketProbabilities, modelProbabilities, b
   const adjustment = anchoredProbability - marketProbability;
   const bestMoneyline = bestMoneylineForSide(books, pickSide);
   const hasPick = pickEdge >= MARKET_ANCHOR_NO_PICK_EDGE;
+  const fairMoneyline = probabilityToAmericanOdds(anchoredProbability);
+  const thresholdText = `${(MARKET_ANCHOR_NO_PICK_EDGE * 100).toFixed(0)}%`;
+  const priceText = bestMoneyline
+    ? `${bestMoneyline.bookLabel} ${formatAmericanOdds(bestMoneyline.price)}`
+    : "the best available moneyline";
+  const insight = hasPick
+    ? `The market prices ${side.abbreviation} at ${formatPercent(marketProbability)}, but the anchored model view is ${formatPercent(anchoredProbability)}. That leaves a ${formatPercent(pickEdge)} gap in our favor.`
+    : `The closest side is ${side.abbreviation}, but the anchored edge is only ${formatPercent(pickEdge)}. That is below the ${thresholdText} minimum, so there is not enough separation from the market.`;
+  const action = hasPick
+    ? `Consider ${side.abbreviation} only at ${priceText} or better. The anchored fair price is about ${formatAmericanOdds(fairMoneyline)}; pass if the line moves worse than that, and recheck starters/lineups.`
+    : `Pass this game for now. Recheck only if the moneyline improves enough to create at least a ${thresholdText} anchored edge.`;
 
   return {
     mode: "marketAnchored",
@@ -829,6 +858,9 @@ function marketAnchoredDecision(game, marketProbabilities, modelProbabilities, b
       edge: homeEdge,
     },
     bestMoneyline,
+    fairMoneyline,
+    insight,
+    actionText: action,
     thresholds: {
       noPick: MARKET_ANCHOR_NO_PICK_EDGE,
       value: MARKET_ANCHOR_VALUE_EDGE,

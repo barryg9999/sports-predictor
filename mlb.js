@@ -404,7 +404,8 @@ function marketAnchorHtml(game) {
       <strong>${esc(decision.label)}</strong>
       <span>${candidate ? `${esc(candidate.abbreviation)} anchored ${accuracy(decision.anchoredProbability)} vs market ${accuracy(decision.marketProbability)}` : "No actionable side"}</span>
       <span>Model signal ${accuracy(decision.modelProbability)} · edge ${signedPct(decision.edge)}${best && decision.action === "pick" ? ` · best ML ${esc(best.bookLabel)} ${american(best.price)}` : ""}</span>
-      <span>${esc(decision.reason || "")}</span>
+      <span class="market-insight"><b>Insight:</b> ${esc(decision.insight || decision.reason || "")}</span>
+      <span class="market-action"><b>Action:</b> ${esc(decision.actionText || decision.reason || "")}</span>
     </div>
   `;
 }
