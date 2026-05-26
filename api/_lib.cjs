@@ -18,6 +18,7 @@ const PITCHER_PQS_SLOPE = 0.34;
 const CALIBRATION_LOOKBACK_DAYS = 30;
 const MIN_CALIBRATION_OVERALL_PICKS = 30;
 const MIN_CALIBRATION_BUCKET_PICKS = 20;
+const WEIGHTED_SIGMOID_K = 2.5;
 
 const samfordArticleTopTen = [
   { id: "RD", label: "1 RD", weightRank: 10, direction: "higher", articleName: "Run differential" },
@@ -132,22 +133,20 @@ const mlbModels = [
     })),
   },
   {
-    id: "ensemble",
+    id: "weightedSigmoid",
     sport: "mlb",
-    name: "6 - Consensus calibrated ensemble",
-    shortName: "6 Ensemble",
-    description: "Consensus model that averages the side probabilities from Models 1-5 and uses saved pregame backtests before assigning confidence.",
+    name: "6 - Normalized weighted sigmoid predictor",
+    shortName: "6 Sigmoid",
+    description: "Normalizes pitcher, bullpen, offense, environment, and umpire/framing metrics to 0-1, applies the requested weights, and converts the score gap to win probability with a tuned sigmoid.",
     components: [
-      { id: "core5", label: "1 Core 5", weight: 0.20 },
-      { id: "expanded10", label: "2 Expanded 10", weight: 0.20 },
-      { id: "pitchingContext18", label: "3 Pitching Context", weight: 0.20 },
-      { id: "starterPqs", label: "4 Starter PQS", weight: 0.20 },
-      { id: "samfordTop10", label: "5 Samford Top 10", weight: 0.20 },
+      { id: "startingPitcher", label: "Starting Pitcher", weight: 0.40 },
+      { id: "bullpen", label: "Bullpen", weight: 0.25 },
+      { id: "offense", label: "Offense", weight: 0.20 },
+      { id: "environment", label: "Environment", weight: 0.10 },
+      { id: "umpireFraming", label: "Umpire / Framing", weight: 0.05 },
     ],
   },
 ];
-
-const ensembleModelIds = ["core5", "expanded10", "pitchingContext18", "starterPqs", "samfordTop10"];
 
 const parkRunFactors = {
   "Coors Field": 115,
@@ -340,6 +339,21 @@ function lowerScore(value, high, low, fallback = 50) {
   return clamp(((high - value) / (high - low)) * 100);
 }
 
+function normalizeHigherMetric(value, min, max, fallback = 0.5) {
+  if (!Number.isFinite(value) || max <= min) return fallback;
+  return clamp((value - min) / (max - min), 0, 1);
+}
+
+function normalizeLowerMetric(value, min, max, fallback = 0.5) {
+  if (!Number.isFinite(value) || max <= min) return fallback;
+  return clamp((max - value) / (max - min), 0, 1);
+}
+
+function sigmoidProbability(scoreDiff, k = 5) {
+  if (!Number.isFinite(scoreDiff)) return 0.5;
+  return 1 / (1 + Math.exp(-k * scoreDiff));
+}
+
 function averageScores(...values) {
   const valid = values.filter(Number.isFinite);
   return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : 50;
@@ -511,14 +525,18 @@ function modelSideProbabilities(game) {
   if (!game.projectionAvailable || !Number.isFinite(game.away?.composite) || !Number.isFinite(game.home?.composite)) {
     return { away: null, home: null };
   }
+  if (
+    Number.isFinite(game.away?.modelSubValues?.sigmoidWinProbability) &&
+    Number.isFinite(game.home?.modelSubValues?.sigmoidWinProbability)
+  ) {
+    return {
+      away: game.away.modelSubValues.sigmoidWinProbability,
+      home: game.home.modelSubValues.sigmoidWinProbability,
+    };
+  }
   const diff = game.home.composite - game.away.composite;
   const home = 1 / (1 + Math.exp(-diff / 18));
   return { home, away: 1 - home };
-}
-
-function probabilityEdgeScore(probability) {
-  if (!Number.isFinite(probability)) return 50;
-  return clamp(50 + ((probability - 0.5) * 60), 20, 80);
 }
 
 function sideForOutcomeName(outcomeName, game) {
@@ -1389,7 +1407,7 @@ async function pitcherMap(personIds, season) {
   return new Map((data.people || []).map((person) => [person.id, person]));
 }
 
-async function starterWorkloadMap(personIds, dateText, season) {
+async function starterWorkloadMap(personIds, dateText, season, pitchingContext) {
   const ids = [...new Set(personIds.filter(Boolean))];
   if (!ids.length) return new Map();
   const data = await mlbFetch(`/api/v1/people?personIds=${ids.join(",")}&hydrate=stats(group=[pitching],type=[gameLog],season=${season},gameType=R)`);
@@ -1400,6 +1418,7 @@ async function starterWorkloadMap(personIds, dateText, season) {
       .sort((a, b) => b.date.localeCompare(a.date));
     const lastStart = starts[0] || null;
     const recentStarts = starts.slice(0, 4);
+    const recentFiveStarts = starts.slice(0, 5);
     const recentTotals = recentStarts.reduce(
       (sum, split) => {
         const stat = split.stat || {};
@@ -1410,14 +1429,29 @@ async function starterWorkloadMap(personIds, dateText, season) {
       },
       { strikes: 0, pitches: 0, outs: 0 }
     );
+    const recentFipTotals = recentFiveStarts.reduce(
+      (sum, split) => {
+        const stat = split.stat || {};
+        sum.outs += statOuts(stat);
+        sum.homeRuns += num(stat.homeRuns);
+        sum.baseOnBalls += num(stat.baseOnBalls);
+        sum.hitByPitch += num(stat.hitByPitch);
+        sum.strikeOuts += num(stat.strikeOuts);
+        return sum;
+      },
+      { outs: 0, homeRuns: 0, baseOnBalls: 0, hitByPitch: 0, strikeOuts: 0 }
+    );
     const pitchCountLastStart = num(lastStart?.stat?.pitchesThrown || lastStart?.stat?.numberOfPitches, 85);
     const daysRest = lastStart?.date ? Math.max(0, daysBetween(lastStart.date, dateText) - 1) : 5;
+    const rollingXfipLast5 = recentFipTotals.outs ? xfipProxyFromStat(recentFipTotals, pitchingContext) : null;
     return [person.id, {
       lastStartDate: lastStart?.date || null,
       daysRest,
       pitchCountLastStart,
       expectedInnings: expectedInningsFromPitchCount(pitchCountLastStart),
       inningsLastStart: lastStart?.stat?.inningsPitched || "",
+      rollingXfipLast5,
+      rollingXfipStarts: recentFiveStarts.length,
       recentProcess: {
         veloTrend: 0,
         whiffPctRecent: null,
@@ -1471,6 +1505,27 @@ async function lineupSplitScore(teamId, pitcherHand, season, leagueWoba) {
   };
 }
 
+async function recentTeamHittingMap(teamIds, dateText, season, leagueWoba) {
+  const wanted = new Set(teamIds);
+  if (!wanted.size) return new Map();
+  const startDate = addDays(dateText, -14);
+  const endDate = addDays(dateText, -1);
+  const data = await mlbFetch(`/api/v1/teams/stats?stats=byDateRange&group=hitting&sportIds=1&season=${season}&gameType=R&startDate=${startDate}&endDate=${endDate}`);
+  const rows = (data.stats?.[0]?.splits || [])
+    .filter((split) => wanted.has(split.team?.id));
+  return new Map(rows.map((split) => {
+    const recentWoba = woba(split.stat || {});
+    const recentWrcPlus = recentWoba && leagueWoba ? (recentWoba / leagueWoba) * 100 : null;
+    return [split.team.id, {
+      woba: recentWoba,
+      wrcPlus: recentWrcPlus,
+      startDate,
+      endDate,
+      source: "MLB Stats API by-date-range hitting proxy for rolling wRC+.",
+    }];
+  }));
+}
+
 async function bullpenSnapshots(teamIds, dateText, fipConstant) {
   const wanted = new Set(teamIds);
   const startDate = addDays(dateText, -15);
@@ -1499,6 +1554,11 @@ async function bullpenSnapshots(teamIds, dateText, fipConstant) {
     outs30d: 0,
     earnedRuns30d: 0,
     appearances30d: 0,
+    homeRuns30d: 0,
+    baseOnBalls30d: 0,
+    hitByPitch30d: 0,
+    strikeOuts30d: 0,
+    battersFaced30d: 0,
     recentPitches: 0,
     recentOuts: 0,
     recentAppearances: 0,
@@ -1518,6 +1578,11 @@ async function bullpenSnapshots(teamIds, dateText, fipConstant) {
         current.outs30d += outs;
         current.earnedRuns30d += num(stat.earnedRuns);
         current.appearances30d += 1;
+        current.homeRuns30d += num(stat.homeRuns);
+        current.baseOnBalls30d += num(stat.baseOnBalls);
+        current.hitByPitch30d += num(stat.hitByPitch);
+        current.strikeOuts30d += num(stat.strikeOuts);
+        current.battersFaced30d += num(stat.battersFaced);
         if (officialDate >= startDate) {
           current.outs += outs;
           current.earnedRuns += num(stat.earnedRuns);
@@ -1540,6 +1605,13 @@ async function bullpenSnapshots(teamIds, dateText, fipConstant) {
     const era = stat.outs ? (stat.earnedRuns * 27) / stat.outs : 4.25;
     const era30d = stat.outs30d ? (stat.earnedRuns30d * 27) / stat.outs30d : era;
     const fip = stat.outs ? fipFromStat(stat, fipConstant) : null;
+    const fip30d = stat.outs30d ? fipFromStat({
+      outs: stat.outs30d,
+      homeRuns: stat.homeRuns30d,
+      baseOnBalls: stat.baseOnBalls30d,
+      hitByPitch: stat.hitByPitch30d,
+      strikeOuts: stat.strikeOuts30d,
+    }, fipConstant) : fip;
     const bullpenKbb = kbbPct(stat);
     return [teamId, {
       ...stat,
@@ -1547,6 +1619,7 @@ async function bullpenSnapshots(teamIds, dateText, fipConstant) {
       era30d,
       highLeverageEra: era30d,
       fip,
+      fip30d,
       kbbPct: bullpenKbb,
       innings: outsToIp(stat.outs),
       innings30d: outsToIp(stat.outs30d),
@@ -1894,10 +1967,130 @@ function pitcherQualityComponents(side, context, opponentSide) {
   ];
 }
 
+function weightedSigmoidMetric(label, normalized, weight, rawValue, source = "") {
+  const value = Number.isFinite(normalized) ? clamp(normalized, 0, 1) : 0.5;
+  return { label, normalized: value, weight, rawValue, source };
+}
+
+function weightedMetricDetail(metric) {
+  const raw = metric.rawValue === undefined || metric.rawValue === null || metric.rawValue === ""
+    ? "n/a"
+    : metric.rawValue;
+  const source = metric.source ? `, ${metric.source}` : "";
+  return `${metric.label}: ${raw}, norm ${(metric.normalized * 100).toFixed(0)}%, contributes ${(metric.normalized * metric.weight * 100).toFixed(1)} pts${source}`;
+}
+
+function weightedSigmoidCategory(id, label, weight, metrics) {
+  const contribution = metrics.reduce((sum, metric) => sum + (metric.normalized * metric.weight), 0);
+  const score = weight ? (contribution / weight) * 100 : 50;
+  return {
+    component: component(
+      id,
+      label,
+      weight,
+      score,
+      `${metrics.map(weightedMetricDetail).join("; ")}.`,
+      contribution
+    ),
+    contribution,
+    metrics,
+  };
+}
+
+function restCredit(daysRest) {
+  if (!Number.isFinite(daysRest)) return 1;
+  if (daysRest >= 4) return 1;
+  if (daysRest === 3) return 0.65;
+  if (daysRest === 2) return 0.35;
+  return 0.1;
+}
+
+function closerAvailabilityCredit(bullpen = {}) {
+  const recentPitches = num(bullpen.recentPitches, 0);
+  const recentAppearances = num(bullpen.recentAppearances, 0);
+  const recentInnings = safeDivide(num(bullpen.recentOuts, 0), 3, 0);
+  if (recentPitches >= 105 || recentAppearances >= 6 || recentInnings >= 8) return 0;
+  if (recentPitches >= 75 || recentAppearances >= 4 || recentInnings >= 5) return 0.5;
+  return 1;
+}
+
+function temperatureCredit(temperatureF) {
+  if (!Number.isFinite(temperatureF)) return 0.5;
+  if (temperatureF <= 50) return 0.65;
+  if (temperatureF >= 80) return 0.5;
+  return 0.65 - (((temperatureF - 50) / 30) * 0.15);
+}
+
+function weightedSigmoidComponents(side, context, opponentSide) {
+  const rollingXfip = Number.isFinite(side.starterWorkload?.rollingXfipLast5)
+    ? side.starterWorkload.rollingXfipLast5
+    : side.spXfip;
+  const opponentLineupWoba = opponentSide.lineup?.woba;
+  const groundBall = groundBallPct(side.pitcherStat);
+  const daysRest = num(side.starterWorkload?.daysRest, 5);
+  const reliefFip30d = Number.isFinite(side.bullpen?.fip30d)
+    ? side.bullpen.fip30d
+    : (Number.isFinite(side.bullpen?.fip) ? side.bullpen.fip : context.averageFip);
+  const highLeverageIpLast3d = safeDivide(num(side.bullpen?.recentOuts, 0), 3, 0);
+  const recentHitting = context.recentTeamHitting?.get(side.teamId) || {};
+  const rollingWrcPlus = Number.isFinite(recentHitting.wrcPlus) ? recentHitting.wrcPlus : side.lineup?.wrcPlus;
+  const lineupAvailability = Number.isFinite(side.lineup?.strengthModifier) ? side.lineup.strengthModifier : 1;
+  const parkFactor = num(context.parkFactor, 100);
+  const windFactor = num(context.windFactor, 0);
+  const umpireZoneFactor = num(context.umpireZoneFactor, 0);
+  const temperatureF = Number.isFinite(context.temperatureF) ? context.temperatureF : null;
+  const catcherFramingRuns = num(side.catcherFramingRuns, 0);
+  const closerCredit = closerAvailabilityCredit(side.bullpen);
+
+  const categories = [
+    weightedSigmoidCategory("startingPitcher", "Starting Pitcher", 0.40, [
+      weightedSigmoidMetric("xFIP season", normalizeLowerMetric(side.spXfip, 2.5, 5.5), 0.16, Number.isFinite(side.spXfip) ? side.spXfip.toFixed(2) : "n/a", side.spXfipFallback ? "league fallback" : "season proxy"),
+      weightedSigmoidMetric("xFIP rolling last 5", normalizeLowerMetric(rollingXfip, 2.5, 5.5), 0.08, Number.isFinite(rollingXfip) ? rollingXfip.toFixed(2) : "n/a", Number.isFinite(side.starterWorkload?.rollingXfipLast5) ? `${side.starterWorkload.rollingXfipStarts || 0} starts` : "season fallback"),
+      weightedSigmoidMetric("K%", normalizeHigherMetric(kPct(side.pitcherStat), 0.15, 0.35), 0.06, `${(kPct(side.pitcherStat) * 100).toFixed(1)}%`),
+      weightedSigmoidMetric("BB%", normalizeLowerMetric(bbPct(side.pitcherStat), 0.04, 0.12), 0.04, `${(bbPct(side.pitcherStat) * 100).toFixed(1)}%`),
+      weightedSigmoidMetric("Platoon split wOBA vs lineup", normalizeLowerMetric(opponentLineupWoba, 0.280, 0.380), 0.04, Number.isFinite(opponentLineupWoba) ? opponentLineupWoba.toFixed(3) : "n/a", "opponent split proxy"),
+      weightedSigmoidMetric("GB%", normalizeHigherMetric(groundBall, 0.35, 0.60), 0.012, `${(groundBall * 100).toFixed(1)}%`, "park-aware slot"),
+      weightedSigmoidMetric("Days rest", restCredit(daysRest), 0.008, `${daysRest}`),
+    ]),
+    weightedSigmoidCategory("bullpen", "Bullpen", 0.25, [
+      weightedSigmoidMetric("Relief FIP last 30 days", normalizeLowerMetric(reliefFip30d, 2.8, 5.5), 0.125, Number.isFinite(reliefFip30d) ? reliefFip30d.toFixed(2) : "n/a"),
+      weightedSigmoidMetric("High-leverage IP last 3 days", normalizeLowerMetric(highLeverageIpLast3d, 0, 8), 0.075, highLeverageIpLast3d.toFixed(1), "usage penalty proxy"),
+      weightedSigmoidMetric("Closer availability", closerCredit, 0.05, `${Math.round(closerCredit * 100)}%`, "rest proxy"),
+    ]),
+    weightedSigmoidCategory("offense", "Offense", 0.20, [
+      weightedSigmoidMetric("wRC+ vs pitcher handedness", normalizeHigherMetric(side.lineup?.wrcPlus, 60, 150), 0.10, Number.isFinite(side.lineup?.wrcPlus) ? side.lineup.wrcPlus.toFixed(1) : "n/a", side.lineup?.split || ""),
+      weightedSigmoidMetric("Rolling wRC+ last 14 days", normalizeHigherMetric(rollingWrcPlus, 60, 150), 0.07, Number.isFinite(rollingWrcPlus) ? rollingWrcPlus.toFixed(1) : "n/a", recentHitting.source ? `${recentHitting.startDate} to ${recentHitting.endDate}` : "season fallback"),
+      weightedSigmoidMetric("Lineup availability", clamp(lineupAvailability, 0, 1), 0.03, `${Math.round(clamp(lineupAvailability, 0, 1) * 100)}%`, "neutral until confirmed lineup/WAR feed"),
+    ]),
+    weightedSigmoidCategory("environment", "Environment", 0.10, [
+      weightedSigmoidMetric("Park run factor", normalizeHigherMetric(parkFactor, 85, 115), 0.04, parkFactor.toFixed(0)),
+      weightedSigmoidMetric("Wind", normalizeHigherMetric(windFactor, -0.10, 0.10), 0.035, windFactor.toFixed(3), "neutral unless weather feed connected"),
+      weightedSigmoidMetric("Temperature", temperatureCredit(temperatureF), 0.015, Number.isFinite(temperatureF) ? `${temperatureF.toFixed(0)}F` : "neutral"),
+      weightedSigmoidMetric("Home field", side.side === "home" ? 1 : 0, 0.01, side.side === "home" ? "home" : "away"),
+    ]),
+    weightedSigmoidCategory("umpireFraming", "Umpire / Framing", 0.05, [
+      weightedSigmoidMetric("HP umpire zone size", normalizeHigherMetric(umpireZoneFactor, -0.10, 0.10), 0.03, umpireZoneFactor.toFixed(3), "neutral unless umpire feed connected"),
+      weightedSigmoidMetric("Catcher framing rating", normalizeHigherMetric(catcherFramingRuns, -15, 15), 0.02, catcherFramingRuns.toFixed(1), "neutral unless Savant framing feed connected"),
+    ]),
+  ];
+
+  side.modelSubValues = {
+    weightedScore: categories.reduce((sum, category) => sum + category.contribution, 0),
+    categoryContributions: Object.fromEntries(categories.map((category) => [
+      category.component.label,
+      Number((category.contribution * 100).toFixed(3)),
+    ])),
+    metricCount: categories.reduce((sum, category) => sum + category.metrics.length, 0),
+    sigmoidK: WEIGHTED_SIGMOID_K,
+  };
+  return categories.map((category) => category.component);
+}
+
 function modelComponents(modelId, side, context, opponentSide) {
   if (modelId === "expanded10") return expandedTenComponents(side, context, opponentSide);
   if (modelId === "pitchingContext18") return pitchingContextComponents(side, context, opponentSide);
   if (modelId === "starterPqs") return pitcherQualityComponents(side, context, opponentSide);
+  if (modelId === "weightedSigmoid") return weightedSigmoidComponents(side, context, opponentSide);
   return coreFiveComponents(side, opponentSide);
 }
 
@@ -1943,64 +2136,47 @@ function scoreSingleModelPair(model, awaySource, homeSource, context) {
   return { model, away, home, projectionAvailable, winner, loser, margin };
 }
 
-function buildEnsemblePair(awaySource, homeSource, context) {
-  const baseResults = ensembleModelIds
-    .map((id) => scoreSingleModelPair(modelById(id), awaySource, homeSource, context))
-    .filter((result) => result.projectionAvailable);
+function scoreWeightedSigmoidPair(awaySource, homeSource, context) {
+  const model = modelById("weightedSigmoid");
   const away = cloneModelSide(awaySource);
   const home = cloneModelSide(homeSource);
-  const projectionAvailable = baseResults.length >= 3;
-  if (!projectionAvailable) {
-    away.components = [];
-    home.components = [];
-    away.composite = null;
-    home.composite = null;
-    return { model: modelById("ensemble"), away, home, projectionAvailable, winner: null, loser: null, margin: null, baseResults };
-  }
-  const modelWeight = 1 / baseResults.length;
-  const probabilities = baseResults.map((result) => {
-    const modelProbabilities = modelSideProbabilities(result);
-    const pick = result.winner?.side || null;
-    return {
-      model: result.model,
-      pick,
-      margin: result.margin,
-      away: modelProbabilities.away,
-      home: modelProbabilities.home,
+  [away, home].forEach((side) => {
+    const opponent = side.side === "away" ? home : away;
+    side.components = weightedSigmoidComponents(side, context, opponent);
+    side.rawModelScore = compositeFromComponents(side.components) / 100;
+    side.modelSubValues = {
+      ...(side.modelSubValues || {}),
+      weightedScore: side.rawModelScore,
     };
   });
-  const awayProbability = probabilities.reduce((sum, item) => sum + (Number.isFinite(item.away) ? item.away : 0.5), 0) / probabilities.length;
-  const homeProbability = probabilities.reduce((sum, item) => sum + (Number.isFinite(item.home) ? item.home : 0.5), 0) / probabilities.length;
-  away.composite = probabilityEdgeScore(awayProbability);
-  home.composite = probabilityEdgeScore(homeProbability);
-  away.components = probabilities.map((item) => component(
-    item.model.id,
-    item.model.shortName || item.model.name,
-    modelWeight,
-    probabilityEdgeScore(item.away),
-    `${item.model.shortName || item.model.name}: ${item.pick === "away" ? "picked" : "faded"} ${away.abbreviation}; model margin ${Number.isFinite(item.margin) ? item.margin.toFixed(1) : "n/a"}`,
-    item.away
-  ));
-  home.components = probabilities.map((item) => component(
-    item.model.id,
-    item.model.shortName || item.model.name,
-    modelWeight,
-    probabilityEdgeScore(item.home),
-    `${item.model.shortName || item.model.name}: ${item.pick === "home" ? "picked" : "faded"} ${home.abbreviation}; model margin ${Number.isFinite(item.margin) ? item.margin.toFixed(1) : "n/a"}`,
-    item.home
-  ));
-  const winnerSide = away.composite >= home.composite ? "away" : "home";
+  const projectionAvailable = away.starterKnown && home.starterKnown;
+  if (!projectionAvailable) {
+    away.composite = null;
+    home.composite = null;
+    return { model, away, home, projectionAvailable, winner: null, loser: null, margin: null };
+  }
+  const scoreDiffAway = away.rawModelScore - home.rawModelScore;
+  const awayProbability = sigmoidProbability(scoreDiffAway, WEIGHTED_SIGMOID_K);
+  const homeProbability = 1 - awayProbability;
+  away.composite = awayProbability * 100;
+  home.composite = homeProbability * 100;
+  away.modelSubValues = {
+    ...(away.modelSubValues || {}),
+    sigmoidWinProbability: awayProbability,
+    sigmoidK: WEIGHTED_SIGMOID_K,
+    scoreDiff: scoreDiffAway,
+  };
+  home.modelSubValues = {
+    ...(home.modelSubValues || {}),
+    sigmoidWinProbability: homeProbability,
+    sigmoidK: WEIGHTED_SIGMOID_K,
+    scoreDiff: -scoreDiffAway,
+  };
+  const winnerSide = awayProbability >= homeProbability ? "away" : "home";
   const winner = winnerSide === "away" ? away : home;
   const loser = winnerSide === "away" ? home : away;
   const margin = Math.abs(winner.composite - loser.composite);
-  const modelVotes = probabilities.reduce((votes, item) => {
-    if (item.pick === "away") votes.away += 1;
-    if (item.pick === "home") votes.home += 1;
-    return votes;
-  }, { away: 0, home: 0 });
-  away.modelSubValues = { ensembleProbability: awayProbability, modelVotes: modelVotes.away, modelCount: probabilities.length };
-  home.modelSubValues = { ensembleProbability: homeProbability, modelVotes: modelVotes.home, modelCount: probabilities.length };
-  return { model: modelById("ensemble"), away, home, projectionAvailable, winner, loser, margin, baseResults };
+  return { model, away, home, projectionAvailable, winner, loser, margin };
 }
 
 async function buildMlbScorecard(dateText, modelId = "core5", options = {}) {
@@ -2022,10 +2198,11 @@ async function buildMlbScorecard(dateText, modelId = "core5", options = {}) {
   const teamHittingById = new Map(hittingSplits.map((split) => [split.team.id, split]));
   const pitcherIds = games.flatMap((game) => [game.teams?.away?.probablePitcher?.id, game.teams?.home?.probablePitcher?.id]);
   const teamIds = [...new Set(games.flatMap((game) => [game.teams?.away?.team?.id, game.teams?.home?.team?.id]).filter(Boolean))];
-  const [pitchers, bullpens, starterWorkloads] = await Promise.all([
+  const [pitchers, bullpens, starterWorkloads, recentTeamHitting] = await Promise.all([
     pitcherMap(pitcherIds, season),
     bullpenSnapshots(teamIds, dateText, fipConstant),
-    starterWorkloadMap(pitcherIds, dateText, season),
+    starterWorkloadMap(pitcherIds, dateText, season, pitchingContext),
+    selectedModel.id === "weightedSigmoid" ? recentTeamHittingMap(teamIds, dateText, season, leagueWoba) : Promise.resolve(new Map()),
   ]);
 
   const rows = await Promise.all(games.map(async (game) => {
@@ -2078,6 +2255,8 @@ async function buildMlbScorecard(dateText, modelId = "core5", options = {}) {
           pitchCountLastStart: 85,
           expectedInnings: expectedInningsFromPitchCount(85),
           inningsLastStart: "",
+          rollingXfipLast5: null,
+          rollingXfipStarts: 0,
         },
         catcherFramingRuns: 0,
         teamWoba: woba(teamHitting),
@@ -2093,12 +2272,14 @@ async function buildMlbScorecard(dateText, modelId = "core5", options = {}) {
       averageFip: pitchingContext.averageFip,
       fipConstant,
       leagueHrPerIp: pitchingContext.leagueHrPerIp,
+      recentTeamHitting,
       parkFactor,
       windFactor: 0,
+      temperatureF: null,
       umpireZoneFactor: 0,
     };
-    const modelResult = selectedModel.id === "ensemble"
-      ? buildEnsemblePair(away, home, sharedContext)
+    const modelResult = selectedModel.id === "weightedSigmoid"
+      ? scoreWeightedSigmoidPair(away, home, sharedContext)
       : scoreSingleModelPair(selectedModel, away, home, sharedContext);
     Object.assign(away, {
       components: modelResult.away.components,
@@ -2187,7 +2368,8 @@ async function buildMlbScorecard(dateText, modelId = "core5", options = {}) {
       selectedModel.id === "starterPqs" ? "Starter PQS is a starting-pitcher-only report. It intentionally excludes bullpen and team offense from the score; SIERA, barrel, whiff, chase, velocity, zone, weather, and umpire values use transparent proxies or neutral fallbacks where the current MLB Stats API does not expose the requested source fields." : "",
       selectedModel.id === "samfordTop10" ? "Samford Top 10 uses only the article's ranked indicators, in order: RD, ERA, FIP, LOB%, pWAR, WHIP, H/9, BAA, oWAR, and SV. No speed, stolen-base, error, fielding-percentage, pitch-type, or velocity inputs are included." : "",
       selectedModel.id === "samfordTop10" ? "Full FanGraphs fidelity requires direct pWAR, oWAR, and LOB% fields. MLB Stats API fields are used where available; pWAR/oWAR and LOB% fall back to transparent proxies until exact FanGraphs columns are connected." : "",
-      selectedModel.id === "ensemble" ? "The ensemble averages side probabilities from Models 1-5 and requires at least three available model projections for a pick." : "",
+      selectedModel.id === "weightedSigmoid" ? `Model 6 normalizes each requested metric to 0-1, applies the specified category and sub-metric weights, and uses tuned sigmoid k=${WEIGHTED_SIGMOID_K} to display each team's win probability.` : "",
+      selectedModel.id === "weightedSigmoid" ? "Model 6 uses MLB Stats API proxies for xFIP, rolling xFIP, split wRC+, recent offense, bullpen FIP, and bullpen workload; weather, umpire-zone, catcher-framing, and confirmed-lineup availability remain neutral fallbacks until those feeds are connected." : "",
       calibration.available ? `Confidence labels use saved pregame snapshots from the prior ${calibration.lookbackDays} days: ${calibration.overall.picks} picks at ${Math.round((calibration.overall.accuracy || 0) * 100)}%.` : calibration.message,
     ].filter(Boolean),
     league: { fipConstant, averageFip: pitchingContext.averageFip, leagueHrPerIp: pitchingContext.leagueHrPerIp, woba: leagueWoba },
@@ -2339,6 +2521,8 @@ function compactSnapshotSide(side) {
     starterKnown: side.starterKnown,
     pitcherHand: side.pitcherHand,
     composite: Number.isFinite(side.composite) ? Number(side.composite.toFixed(4)) : null,
+    rawModelScore: Number.isFinite(side.rawModelScore) ? Number(side.rawModelScore.toFixed(6)) : null,
+    modelSubValues: side.modelSubValues || null,
     spFip: Number.isFinite(side.spFip) ? Number(side.spFip.toFixed(4)) : null,
     pyth: Number.isFinite(side.pyth) ? Number(side.pyth.toFixed(4)) : null,
     bullpenEra: Number.isFinite(side.bullpen?.era) ? Number(side.bullpen.era.toFixed(4)) : null,

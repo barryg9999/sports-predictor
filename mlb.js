@@ -138,12 +138,16 @@ function weightLabel(weight) {
 }
 
 function scoringComponents(side, projectionAvailable) {
+  const sigmoidProbability = side.modelSubValues?.sigmoidWinProbability;
+  const isSigmoidModel = Number.isFinite(sigmoidProbability);
   return [
     {
       id: "composite",
-      label: "Composite",
+      label: isSigmoidModel ? "Win probability" : "Composite",
       score: projectionAvailable ? side.composite : null,
-      detail: projectionAvailable ? "Weighted total" : "Projection paused",
+      detail: projectionAvailable && isSigmoidModel
+        ? `Weighted score ${score((side.modelSubValues.weightedScore || 0) * 100)}/100`
+        : (projectionAvailable ? "Weighted total" : "Projection paused"),
       weight: null,
       value: projectionAvailable ? side.composite : "N/A",
     },
@@ -153,6 +157,14 @@ function scoringComponents(side, projectionAvailable) {
 
 function modelSubValuesHtml(subValues) {
   if (!subValues) return "";
+  if (Number.isFinite(subValues.sigmoidWinProbability)) {
+    const contributions = subValues.categoryContributions
+      ? Object.entries(subValues.categoryContributions)
+        .map(([label, value]) => `${esc(label)} ${score(value)} pts`)
+        .join("; ")
+      : "";
+    return `<p class="detail-foot">Model 6: win probability ${accuracy(subValues.sigmoidWinProbability)}; weighted score ${score((subValues.weightedScore || 0) * 100)}/100; score gap ${Number.isFinite(subValues.scoreDiff) ? precise.format(subValues.scoreDiff) : "N/A"}; sigmoid k=${score(subValues.sigmoidK)}.${contributions ? ` Category contributions: ${contributions}.` : ""}</p>`;
+  }
   if (Number.isFinite(subValues.samfordStatWins)) {
     return `<p class="detail-foot">Samford Top 10: won ${subValues.samfordStatWins} of ${subValues.samfordTotalStats || 10} indicators; weighted score ${score(subValues.samfordWeightedScore)}.</p>`;
   }
