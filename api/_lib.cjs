@@ -395,6 +395,14 @@ function edgeBucketLabel(bucket) {
   return "Unavailable";
 }
 
+function edgeBucketShortLabel(bucket) {
+  if (bucket === "strong") return "Strong";
+  if (bucket === "solid") return "Solid";
+  if (bucket === "lean") return "Lean";
+  if (bucket === "tight") return "Tight";
+  return "Unavailable";
+}
+
 function emptyCalibrationProfile(modelId, message = "No saved pregame calibration sample is available yet.") {
   return {
     available: false,
@@ -429,6 +437,21 @@ function confidenceRatingFromAccuracy(accuracy, picks, bucket = "unavailable", s
   return { bucket, label: "No edge", className: "no-edge", action: "Pass", reason: "Saved pregame history has not beaten a coin-flip baseline." };
 }
 
+function uncalibratedConfidenceForBucket(bucket, game, reason) {
+  const label = edgeBucketShortLabel(bucket);
+  const marginText = Number.isFinite(game.margin) ? game.margin.toFixed(1) : "n/a";
+  return {
+    bucket,
+    label,
+    className: bucket,
+    action: "Track only",
+    sampleSize: 0,
+    accuracy: null,
+    calibrated: false,
+    reason: `${label} raw edge from a ${marginText}-point composite margin. ${reason}`,
+  };
+}
+
 function confidenceForGame(game, calibration = null) {
   const bucket = edgeBucket(game.margin);
   if (!game.projectionAvailable || bucket === "unavailable") {
@@ -443,26 +466,21 @@ function confidenceForGame(game, calibration = null) {
     };
   }
   if (!calibration?.available) {
-    return {
+    return uncalibratedConfidenceForBucket(
       bucket,
-      label: "Uncalibrated",
-      className: "unproven",
-      sampleSize: 0,
-      accuracy: null,
-      calibrated: false,
-      reason: calibration?.message || "Save pregame snapshots and run backtests before trusting confidence labels.",
-    };
+      game,
+      calibration?.message || "Save pregame snapshots and run backtests before trusting confidence labels."
+    );
   }
   if ((calibration.overall?.picks || 0) < MIN_CALIBRATION_OVERALL_PICKS) {
-    return {
+    const fallback = uncalibratedConfidenceForBucket(
       bucket,
-      label: "Unproven",
-      className: "unproven",
-      sampleSize: calibration.overall?.picks || 0,
-      accuracy: calibration.overall?.accuracy ?? null,
-      calibrated: false,
-      reason: `Only ${calibration.overall?.picks || 0} saved pregame picks in the ${CALIBRATION_LOOKBACK_DAYS}-day sample; need ${MIN_CALIBRATION_OVERALL_PICKS}+ before assigning confidence.`,
-    };
+      game,
+      `Only ${calibration.overall?.picks || 0} saved pregame picks in the ${CALIBRATION_LOOKBACK_DAYS}-day sample; need ${MIN_CALIBRATION_OVERALL_PICKS}+ before assigning calibrated confidence.`
+    );
+    fallback.sampleSize = calibration.overall?.picks || 0;
+    fallback.accuracy = calibration.overall?.accuracy ?? null;
+    return fallback;
   }
   const bucketStats = calibration.buckets?.[bucket] || emptyBacktestBucket(edgeBucketLabel(bucket));
   const rating = confidenceRatingFromAccuracy(bucketStats.accuracy, bucketStats.picks, bucket);
