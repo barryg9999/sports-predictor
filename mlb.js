@@ -104,10 +104,20 @@ function confidenceClass(game) {
   return game?.confidence?.className || (game?.projectionAvailable ? "unproven" : "unavailable");
 }
 
-function confidenceLabel(game, index) {
-  if (!game?.projectionAvailable) return "No projection";
-  const label = game.confidence?.label || "Uncalibrated";
-  return `${index + 1}. ${label}`;
+const confidenceDisplayLabels = {
+  strong: "1. Strong",
+  solid: "2. Solid",
+  lean: "3. Lean",
+  tight: "4. Tight",
+  unproven: "5. Unproven",
+  "no-edge": "6. No edge",
+  unavailable: "7. No projection",
+};
+
+function confidenceLabel(game) {
+  const klass = confidenceClass(game);
+  if (!game?.projectionAvailable) return confidenceDisplayLabels.unavailable;
+  return confidenceDisplayLabels[klass] || game.confidence?.label || "Uncalibrated";
 }
 
 function calibrationNote(calibration) {
@@ -314,7 +324,7 @@ function render(data) {
     const klass = confidenceClass(game);
     return `
       <tr class="${game.gamePk === selectedGamePk ? "selected" : ""}" data-game-pk="${game.gamePk}" tabindex="0" aria-selected="${game.gamePk === selectedGamePk ? "true" : "false"}">
-        <td><span class="edge-pill ${klass}" title="${esc(game.confidence?.reason || "")}">${esc(confidenceLabel(game, index))}</span></td>
+        <td><span class="edge-pill ${klass}" title="${esc(game.confidence?.reason || "")}">${esc(confidenceLabel(game))}</span></td>
         <td>
           <strong>${esc(game.away.abbreviation)} @ ${esc(game.home.abbreviation)}</strong>
           <span>${esc(game.venue)} · ${gameTime(game.gameDate)} · ${esc(game.status)}</span>
