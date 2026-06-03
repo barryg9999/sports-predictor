@@ -452,6 +452,27 @@ function uncalibratedConfidenceForBucket(bucket, game, reason) {
   };
 }
 
+const confidenceSortOrder = {
+  strong: 0,
+  solid: 1,
+  lean: 2,
+  tight: 3,
+  "no-edge": 4,
+  unproven: 5,
+  unavailable: 6,
+};
+
+function confidenceSortRank(game) {
+  const className = game?.confidence?.className || (game?.projectionAvailable ? "unproven" : "unavailable");
+  return confidenceSortOrder[className] ?? 99;
+}
+
+function compareGamesByConfidence(a, b) {
+  const rankDiff = confidenceSortRank(a) - confidenceSortRank(b);
+  if (rankDiff) return rankDiff;
+  return (b.margin || 0) - (a.margin || 0);
+}
+
 function confidenceForGame(game, calibration = null) {
   const bucket = edgeBucket(game.margin);
   if (!game.projectionAvailable || bucket === "unavailable") {
@@ -2517,16 +2538,13 @@ async function buildMlbScorecard(dateText, modelId = "core5", options = {}) {
     };
   }));
 
-  rows.sort((a, b) => {
-    if (a.projectionAvailable !== b.projectionAvailable) return a.projectionAvailable ? -1 : 1;
-    return (b.margin || 0) - (a.margin || 0);
-  });
   const calibration = includeCalibration
     ? await buildMlbCalibrationProfile(dateText, selectedModel.id)
     : emptyCalibrationProfile(selectedModel.id, "Calibration was skipped for this internal scoring run.");
   rows.forEach((game) => {
     game.confidence = confidenceForGame(game, calibration);
   });
+  rows.sort(compareGamesByConfidence);
   return {
     date: dateText,
     season,
